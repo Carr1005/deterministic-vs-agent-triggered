@@ -63,6 +63,37 @@ clone. Do not replace it with `git checkout --orphan` plus `git add -A`: at the 
 writing, `interim-docs/trial-2/` is ~930 KB of untracked session log that `add -A` would
 happily ship.
 
+## If you are here to test it
+
+Take the course first. Clone it, play it, and tell us what happened:
+
+```bash
+git clone https://github.com/Carr1005/deterministic-vs-agent-triggered.git snackbot-my-run
+cd snackbot-my-run
+export OPENAI_API_KEY=sk-...
+claude
+```
+
+Then say `start the course`. You need Python 3.10+, git, and an OpenAI API key — nothing
+else to install. A few cents of API cost for the whole thing.
+
+**Reporting back.** Open an issue and name the version you tested (`v0.1`, and so on — see
+the Releases page). If you reached a demo, paste your numbers from `course/demo-log.md`.
+Those numbers are the most useful thing you can send, because everyone's differ and that
+difference is the lesson.
+
+**One rule.** The copy you played in is not the copy you contribute from. Playing fills in
+your answers, writes the spec, changes `src/snackbot.py`, and adds `round-N` commits. If any
+of that reaches the shared repo, every future learner's tutor thinks the course is already
+underway. So to change something, start clean:
+
+```bash
+git clone -b main https://github.com/Carr1005/deterministic-vs-agent-triggered.git
+```
+
+then branch, commit, and open a pull request. If you can't push, fork it first — that is
+expected, and it is why testers get read access rather than write.
+
 ## Two rules that are convention, not enforcement
 
 GitHub branch protection needs a Pro plan or a public repo — this one is private on a free
