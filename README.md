@@ -81,6 +81,10 @@ cd snackbot-my-run
 You need Python 3.10+, git, and an OpenAI API key. (A downloaded ZIP or a plain folder
 copy also works — `setup/bootstrap.sh` handles all of them.)
 
+*Working on the course itself rather than taking it? Clone `-b main` — that branch carries
+the full authoring history. The default branch is a single squashed commit, so a learner's
+`git log` reads as the course.*
+
 **2 — Export your API key.** In the terminal you are about to start your agent from:
 
 ```bash
