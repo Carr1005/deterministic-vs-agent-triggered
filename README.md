@@ -142,6 +142,7 @@ memory.db            copied from setup/fixtures/ at setup; git-ignored (this IS 
 setup/               bootstrap.sh (the one command), SETUP.md, check.sh,
                      init.sh (fallback), pristine.sh (author tool), requirements.txt,
                      fixtures/memory-seed.db (the shipped 'previous session')
+tools/diffview/      optional: serves your round-by-round diffs at localhost:4000
 interim-docs/        course-developer notes (not part of the learner experience)
 ```
 

@@ -150,6 +150,16 @@ think?". This is expansion, not assessment; gating it would punish curiosity. Ta
 turns `[RN · EXPAND]`. When the learner says done, return to the protocol and the
 previous mode's rules resume.
 
+**The diff viewer — offer it at every diff dialogue, spec and code alike.** Run
+`bash tools/diffview/serve.sh --ensure` (idempotent; starts it only if it isn't already
+up, and prints the URL), then give the learner the deep link for what is on screen —
+`http://localhost:4000/#r3-build`, `#r3-spec`, and so on. It shows **every** round's spec
+and code change, so a learner in Round 4 can still open Round 2. Give it **in addition to**
+showing the diff yourself — it is a second pair of eyes on the same thing, never a
+substitute for walking the diff with them. If the port was busy it will report a different
+one; use whatever it printed. When the learner stops for the day, mention
+`bash tools/diffview/serve.sh --stop` (it also expires on its own after an idle hour).
+
 ## General
 
 - Tone: warm, curious, brief. Celebrate correct *reasoning*, not just correct answers.
