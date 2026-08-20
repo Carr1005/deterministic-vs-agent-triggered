@@ -26,6 +26,18 @@ Not learner content. Items land here when flagged in design review; remove when 
   already existed. All course commands are pinned to `.venv/bin/python`, so the same
   string works in the learner's terminal and in an agent's non-persistent bash shell.
   `setup/pristine.sh` proves a copy is unstarted before it is shared.
+- **A live diff viewer, verified end to end.** `tools/diffview` serves every round's spec
+  and code change at `localhost:4000`, read from the learner's own git history, with
+  unified and side-by-side views. Both views are rendered from the same text so they
+  cannot drift. It writes nothing into the repo — `git status --porcelain` is the tutor's
+  resume signal, and neither SPEC nor BUILD has a scoped `git add` anywhere. Its git calls
+  are hermetic (`-c color.ui=false`, `--no-ext-diff`), tested against a repo with
+  `color.ui=always`, `diff.external`, `GIT_EXTERNAL_DIFF`, `GIT_CONFIG_*` injection and a
+  bogus `GIT_DIR` set at once. **The tutor's rule was also confirmed live**: it offered the
+  link at a diff dialogue in a real session.
+- **Two-branch publishing.** `main` is authoring history and is never rewritten;
+  `release` is one squashed commit, rebuilt per share by `tools/release.sh` and set as
+  GitHub's default branch. See `interim-docs/CONTRIBUTING.md`.
 - **One instruction file, vendor-neutral.** `AGENTS.md` holds every rule. `CLAUDE.md` is
   one line (`@AGENTS.md`), `.gemini/settings.json` and `.aider.conf.yml` are equivalent
   one-line pointers; Codex, Cursor, Cline, Windsurf, Zed and Copilot read `AGENTS.md`

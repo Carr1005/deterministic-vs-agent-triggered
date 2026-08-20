@@ -35,6 +35,12 @@ cur="$(git branch --show-current)"
 }
 git remote get-url origin >/dev/null 2>&1 || fail "no 'origin' remote to publish to."
 
+# Publishing a release built from commits that are not on origin/main would leave the
+# published course ahead of the history a collaborator can see. Push main first.
+git fetch -q origin main 2>/dev/null
+ahead="$(git rev-list --count origin/main..main 2>/dev/null || echo 0)"
+[ "$ahead" = "0" ] || fail "main is $ahead commit(s) ahead of origin/main. Run: git push origin main"
+
 # --- the share gate, wired in so it stops the release ----------------------------
 echo "== share gate"
 bash setup/pristine.sh || fail "pristine.sh refused this tree — do not publish it."

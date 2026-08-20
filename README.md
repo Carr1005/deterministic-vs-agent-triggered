@@ -147,7 +147,9 @@ setup/               bootstrap.sh (the one command), SETUP.md, check.sh,
                      init.sh (fallback), pristine.sh (author tool), requirements.txt,
                      fixtures/memory-seed.db (the shipped 'previous session')
 tools/diffview/      optional: serves your round-by-round diffs at localhost:4000
-interim-docs/        course-developer notes (not part of the learner experience)
+tools/release.sh     author tool: publish main as the single-commit release branch
+interim-docs/        course-developer notes (not part of the learner experience),
+                     including CONTRIBUTING.md — how the two branches are managed
 ```
 
 Two honor-system notes: `course/rounds/*/tutor-notes.md` contain the answers — reading
