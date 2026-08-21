@@ -21,6 +21,14 @@ reads: who does, and by what mechanism?"
 - **rung 2:** "What is the one mechanism an LLM has for making anything happen outside
   its own text?"
 
+**Model answer:**
+**The model invokes**, via **tool calls**, at its own per-turn discretion.
+**Accept if:** invoker = model AND mechanism = tool/function call. "It decides" without
+the mechanism → half credit, rung 2.
+**Reveal:** "Agent-triggered: the model invokes the operation through a tool call, at
+its own discretion. Two tools over the same database — past conversations, snack facts —
+and every read becomes a judgment call. Your words?"
+
 **Clause template (S3.1):**
 > S3.1 `[agent-triggered]` — The every-turn preload is removed. The **model** invokes
 > reads at its own discretion, via tool calls. Two tools over the same database:
@@ -36,6 +44,16 @@ failure you named in Round 2."
   Q2 answer. Does flipping the *reads* change a word of it?"
 - **rung 2:** "Round 4 will count how often read-judgment fails. If *write*-judgment
   fails at the same rate — when, and how, would you ever find out?"
+
+**Model answer:**
+**Writes stay deterministic.** The Round-2 silent-rot argument is unchanged — stronger,
+if anything, since the store now also feeds tool results. Key idea: read and write
+strategies are independent, per-operation decisions.
+**Accept if:** writes stay deterministic AND the silent-rot reason. "Flip everything for
+consistency" → rung 1: consistency is not an argument; failure modes are.
+**Reveal:** "Writes stay deterministic — your own Round-2 argument didn't change. This
+is the course's real thesis surfacing early: deterministic vs agent-triggered is decided
+*per operation*, not per system. Restate?"
 
 **Clause template (S3.2):**
 > S3.2 `[deterministic]` — Writes remain deterministic, unchanged from S2.2. Read
@@ -54,6 +72,14 @@ find it?"
   each piece of text. What is that second column, and what could you compute with two
   of them that you could never compute with two strings?"
 
+**Model answer:**
+Both phrasings are embedded as **vectors**; the search matches by **meaning** (vector
+similarity), not keywords — the two land near each other in embedding space.
+**Accept if:** embeddings/vectors/semantic similarity + meaning-not-keywords.
+**Reveal:** "The store is a vector store: both sentences are embedded, and 'dietary
+restrictions' lands near 'allergic to peanuts' in that space. Matching by meaning is
+what makes tool-reads workable at all. Your words?"
+
 **Clause template (S3.3):**
 > S3.3 — Both searches are **semantic**: vector similarity over embeddings, matching by
 > meaning rather than keywords, so the model's phrasing need not match the stored
@@ -67,3 +93,8 @@ Own words: **what agent-triggered means (who invokes, via what)** — and name *
 thing that was a guarantee in Round 2 and just became probabilistic.** Record in
 `answers.md`, then:
 `git add course/rounds/round-3/answers.md && git commit -m "round-3 tutor"` → SPEC.
+
+**Gate criteria:**
+(a) agent-triggered = model invokes via tool call, per-turn discretion; (b) the thing
+now probabilistic = **whether the read happens at all** (the safety check itself). The
+demo shows it; Round 4 counts it.

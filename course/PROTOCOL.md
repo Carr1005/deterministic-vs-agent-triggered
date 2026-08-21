@@ -70,6 +70,7 @@ Never silently discard learner work; never let untracked drift into a build diff
 
 ## The honor system, stated once
 
-Verify scripts check the build; nothing stops a learner from reading `tutor-notes.md`,
+Verify scripts check the build; nothing stops a learner from reading the answer blocks
+in `questions.md`,
 editing `answers.md` after a reveal, or skipping phases. By design — the course
 optimizes for learning, not proctoring.
