@@ -46,6 +46,10 @@ Done → record.
 
 `git add course/demo-log.md && git commit -m "round-5 demo"`
 
+## Demo expectation (for the close)
+After the pin: `--x5` → **5/5**; single-turn meter lands **between** the Round-1
+baseline and the Round-2 preload. The trade-off was chosen, not stumbled into.
+
 ## Wrap-up
 
 Ask for their one-sentence version, then offer this shape to compare against:

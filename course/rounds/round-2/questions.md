@@ -22,6 +22,15 @@ when does it run?"
   still promise 'the bot never forgets the allergy'? What has to be true about *when it
   runs* for that promise to hold?"
 
+**Model answer:**
+**Code invokes**, running **every turn** (or on a fixed schedule / predefined
+condition), **regardless of model judgment** — the model gets no vote.
+**Accept if:** invoker = code/app AND timing = every turn / by rule / unconditionally.
+"Automatic" alone → automatic according to whom? "SQL" is mechanics, not classification.
+**Reveal:** "Deterministic: your *code* invokes it, every turn, by rule. The model is
+never asked whether the read is worth doing. That guarantee is the point — and its price
+tag is what the demo shows. Your words?"
+
 **Clause template (S2.1):**
 > S2.1 `[deterministic]` — Before composing every answer, **code** performs an exact SQL
 > read of prior-session turns (keyed by thread id, in the order they were written) and injects them
@@ -38,6 +47,15 @@ wrong in the second case?"
 - **rung 2:** "Nothing crashes; no error prints. So *when* do you discover the gap —
   and how long has it existed by then?"
 
+**Model answer:**
+Deterministic. Model-discretion writes create **silent gaps** — nothing crashes; the
+store quietly rots and you discover a hole only when a recall fails weeks later.
+**Accept if:** deterministic AND silent/quiet failure. "It might miss things" is half
+credit → rung 2 (how would you notice, and when?).
+**Reveal:** "Deterministic — every turn, by rule. Model-discretion writes fail as silent
+rot: no crash, just gaps found only when a recall comes back empty. A bad *read* fails
+one turn; a bad *write* poisons every future turn. Restate that?"
+
 **Clause template (S2.2):**
 > S2.2 `[deterministic]` — After every user message and every assistant reply, **code**
 > persists the turn to `CONVERSATIONAL_MEMORY`. Writes are never left to model
@@ -52,6 +70,16 @@ proves this system has the real thing?"
 - **rung 2:** "Design the proof as two shell commands: what runs first, what runs
   second, and what must the second one show?"
 
+**Model answer:**
+Memory **survives process death**; a context window dies with its process. Test: run
+once, kill the process, run a **new process** and ask about the previous session — it
+must answer.
+**Accept if:** process death / restart / new-session recall named. "It's on disk"
+without the test → half credit, rung 2.
+**Reveal:** "A context window, however long, dies with the process. Memory survives it.
+The proof is two commands: run, then run again as a new process and ask what was said
+before. The demo does exactly this. Say the test back?"
+
 **Clause template (S2.3):**
 > S2.3 — Memory must survive process death: a **new process** must recall the content of
 > previous sessions. *(learner's test: «…»)*
@@ -65,3 +93,8 @@ prediction: **what will the meter show in the demo versus your Round-1 baseline?
 directionally-right prediction passes; the demo supplies the number. Record both in
 `answers.md`, then:
 `git add course/rounds/round-2/answers.md && git commit -m "round-2 tutor"` → SPEC.
+
+**Gate criteria:**
+(a) deterministic = code invokes, every turn, no model vote; (b) any prediction of a
+substantial per-turn cost increase (demo shows ~5× baseline, even for questions needing
+no memory).

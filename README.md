@@ -106,7 +106,7 @@ always safe to re-run. Step by step: `setup/SETUP.md`. On Windows, use WSL.)
 > **Read AGENTS.md and start the course.**
 
 That line works in **any** agent, because it names only `AGENTS.md` — the vendor-neutral
-instruction file this course keeps all its rules in. If the agent says the copy isn't set
+entry point that routes to all the course's rules. If the agent says the copy isn't set
 up, let it run `setup/bootstrap.sh` for you.
 
 Plain `start the course` also works wherever the agent loads `AGENTS.md` by itself:
@@ -119,8 +119,8 @@ Plain `start the course` also works wherever the agent loads `AGENTS.md` by itse
 | Aider | `.aider.conf.yml` in this repo does the same |
 | anything else | use the boot line above |
 
-Those three files contain **no rules** — only a pointer to `AGENTS.md`, so there is
-exactly one place tutoring behaviour is defined. If the first reply has no mode tag
+Those three files contain **no rules** — only a pointer to `AGENTS.md`, which routes
+onward, so each behaviour is defined in exactly one place. If the first reply has no mode tag
 (`[R1 · TUTOR]`), the instructions didn't load: paste the boot line.
 
 Stop anytime. Progress lives in git commit names (plus your in-progress `answers.md`),
@@ -131,14 +131,16 @@ not in the chat — a new session, or a *different* coding agent, resumes from
 
 ```
 README.md            you are here (for humans)
-AGENTS.md            the agent's constitution: modes, tags, tutoring/build/demo rules
+AGENTS.md            the orchestrator: identity, mode routing, boot sequence
+course/TUTORING.md   how the tutor talks to the learner (TUTOR/SPEC/DEMO/EXPAND)
+course/BUILDING.md   the build phase and its rails (tutor-alone mode)
 CLAUDE.md            one line: @AGENTS.md — a pointer, never a second rulebook
 .gemini/, .aider.conf.yml   same idea for Gemini CLI and Aider
 course/PROTOCOL.md   the state machine: phases, commits, resume table
 course/demo-log.md   your recorded numbers, round by round
-course/rounds/N/     questions (with rungs + clause templates), answers.md (yours),
-                     tutor-notes (spoilers), build brief, demo script, reference/,
-                     verify.sh
+course/rounds/N/     questions.md (rungs, clause templates AND the answer key —
+                     spoilers live beside each question), answers.md (yours),
+                     build brief, demo script, reference/, verify.sh
 course/rounds/round-0/reference/  the pristine baseline src, for restores
 spec/spec.md         the living spec — empty scaffold; your answers fill it
 src/                 a runnable app from minute one (snackbot.py, meter.py, seed)
@@ -152,6 +154,7 @@ interim-docs/        course-developer notes (not part of the learner experience)
                      including CONTRIBUTING.md — how the two branches are managed
 ```
 
-Two honor-system notes: `course/rounds/*/tutor-notes.md` contain the answers — reading
+Two honor-system notes: the answer blocks inside `course/rounds/*/questions.md`
+contain the answers — reading
 ahead spoils the round for you and only you. And the tutor never blocks: two honest
 attempts earn a reveal, and "just tell me" earns it immediately.

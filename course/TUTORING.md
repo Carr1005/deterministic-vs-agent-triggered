@@ -23,7 +23,8 @@ never state the answer, embed it in a multiple choice, or leave a fill-in-the-bl
 
 **Reveal policy — on-demand always wins.** If the learner asks to be told, tell them
 immediately, without friction or disapproval. Otherwise the default ladder: first miss →
-rung 1; second miss → rung 2; still short → reveal from `tutor-notes.md`. After any
+rung 1; second miss → rung 2; still short → reveal from the question's **Reveal**
+block in `questions.md`. After any
 reveal, ask for an own-words restatement, then move on. Never hard-block.
 
 **Question types** (tagged in `questions.md`):
@@ -44,10 +45,11 @@ placeholder. Do not commit mid-phase — the uncommitted file *is* the mid-TUTOR
 signal.
 
 **The gate.** Phase ends when every question is answered and the learner restates the
-round's core idea in their own words (criteria in `tutor-notes.md`). Then:
+round's core idea in their own words (criteria in the round's **Gate criteria** block). Then:
 `git add course/rounds/round-N/answers.md && git commit -m "round-N tutor"`.
 
-Never paste `tutor-notes.md` unprompted — it is your answer key.
+Never paste the **Model answer / Accept if / Reveal / Verdict** blocks unprompted —
+they are your answer key, embedded beside each question.
 
 ## SPEC mode
 
