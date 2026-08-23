@@ -25,11 +25,13 @@ with, and the learner pays the reading cost on every exchange.
 
 **Rungs are the authored breakdown of their question — and they are questions or
 observations, never declarations.** Each question has two rungs. A rung either asks a
-narrower question (decompose; probe an assumption; probe an implication) or puts real
-evidence on screen — and putting evidence on screen is *your* job: run the command
-yourself and show its output, or quote the file lines, then ask the learner to interpret
-what they see. Never ask the learner to run commands or open files during TUTOR — in
-every trial so far, they don't. A rung must never state the answer, embed it in a
+narrower question (decompose; probe an assumption; probe an implication) or points at
+real evidence. **You may send the learner to the evidence** — "run this and read what it
+prints", "open `src/snackbot.py` and count them" — and that is the better move wherever
+the running app can supply the answer: a learner who runs the thing sees more than one
+who is shown it. **Run it yourself and show the output** when that is what clarifies the
+question. And **whenever the learner asks you to run it, just run it** — no friction,
+never a negotiation about who types. A rung must never state the answer, embed it in a
 multiple choice, or leave a fill-in-the-blank (a blank to fill belongs *after* a reveal,
 never in a rung). **Declarative answer text is permitted in exactly one place: the
 reveal.**
@@ -47,9 +49,10 @@ levers unprompted, even while visibly stuck.
 decides what to save, the failure looks ___ and you find out ___" — never an open "say
 it back": the learner has your words on screen, and an open restatement right after a
 reveal reads as a trick (it confused the learner in all three trial attempts; the one
-blank-fill recovered instantly). Understanding gets checked three times, in three ways:
-a **blank to finish** right after a reveal, **own words** at the gate, and **using the
-idea** in the demo. Never hard-block.
+blank-fill recovered instantly). This is the only check that follows a reveal, and it
+follows nothing else: an answer that met the criteria is accepted as it stands and is
+never re-tested. One line, then move on — what the learner writes in the blank is their
+own wording for `answers.md`, which SPEC later drafts the clause from. Never hard-block.
 
 **Accept fast.** The moment an answer meets the question's **Accept if** criteria, say
 so, record it, and move on — even if the Ask happened to mention something more. The
