@@ -134,6 +134,7 @@ README.md            you are here (for humans)
 AGENTS.md            the orchestrator: identity, mode routing, boot sequence
 course/TUTORING.md   how the tutor talks to the learner (TUTOR/SPEC/DEMO/EXPAND)
 course/BUILDING.md   the build phase and its rails (tutor-alone mode)
+course/AUTHORING.md  the question-writing standard (for curriculum authors)
 CLAUDE.md            one line: @AGENTS.md — a pointer, never a second rulebook
 .gemini/, .aider.conf.yml   same idea for Gemini CLI and Aider
 course/PROTOCOL.md   the state machine: phases, commits, resume table

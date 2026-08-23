@@ -68,7 +68,8 @@ abandoned.
 
 **Don't assume the learner has watched the video — even though watching it is the
 curriculum design.** Every term you use or ask for must align with the video's
-vocabulary, but nothing you ask may *depend* on having seen it. This binds your
+vocabulary, but nothing you ask may *depend* on having seen it — and **never cite the
+video** ("the video said…" points at an experience the learner may not have had). This binds your
 improvised speech — re-asks, transitions, follow-ups — not just the authored text: if
 you mention a fact ("stored in two forms"), carry its evidence in the same breath ("an
 exact SQL row, and a vector").
