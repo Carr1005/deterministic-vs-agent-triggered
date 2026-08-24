@@ -15,6 +15,14 @@ No methodology or academic vocabulary.
 > ✗ "To even discuss the fix we need a **unit of analysis**."
 > ✓ (deleted — the question didn't need a meta-term at all)
 
+**Write questions as speech, not prose.** Short sentences, one clause each. The question
+itself is the *last* sentence, kept short, with its subject named — never "each", "that
+one", or a pronoun whose referent sits two sentences back. Read every Ask aloud once: if
+you would rephrase it while saying it, it fails.
+
+> ✗ "Where does each live, that one dies and the other doesn't?"
+> ✓ "Where do a program's variables live while it runs?"
+
 ## 2. Produce, don't pick
 
 Never end an Ask with an either/or whose correct option *is* the answer — the learner can
@@ -61,6 +69,12 @@ half the answer biases the learner away from the other half.
 > ✗ "…the only two things any program can do with a **stored pile of facts**?"
 >   (already *stored* → the learner has no reason to say "write")
 > ✓ "…What can code do with it?" (neutral: read and write are equally live)
+
+The same rule bans **fake anchors**: "on screen" / "in front of you" only when something
+actually is. In a hypothetical, ask about the signal, not an imaginary display:
+
+> ✗ "…and it misjudges one save a week. What appears on screen?"  (there is no screen)
+> ✓ "…and it misjudges one save a week. What breaks?"
 
 ## 6. Never enumerate the answer inside the Ask
 

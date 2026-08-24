@@ -98,8 +98,10 @@ signal.
 
 **The gate.** Phase ends when every question is answered and the learner passes the
 round's gate (criteria in the round's **Gate criteria** block). A gate asks for **one
-thing** — a single own-words restatement or a single prediction, never a checklist of
-parts; the per-question answers already on record cover the rest. This is the one place
+thing** — a single own-words restatement of what the round established, never a checklist
+of parts; the per-question answers already on record cover the rest. Predictions belong
+to the demo's **Predict** steps, where the run tests them immediately; a gate that
+predicts duplicates the demo. This is the one place
 an open own-words summary belongs — nothing was just revealed here. Then:
 `git add course/rounds/round-N/answers.md && git commit -m "round-N tutor"`.
 

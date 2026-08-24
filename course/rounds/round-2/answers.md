@@ -4,14 +4,11 @@ Written by the tutor during TUTOR, in your own words, one entry per question.
 An uncommitted change to this file means this round's TUTOR is in progress; it is
 committed as `round-2 tutor` when the gate passes.
 
-## Q1 — deterministic: who invokes, when
+## Q1 — write the rule: when the read runs
 (not yet answered)
 
-## Q2 — why writes are deterministic too
+## Q2 — how the writes run, and why
 (not yet answered)
 
-## Q3 — memory vs context window: the test
-(not yet answered)
-
-## Gate restatement (incl. meter prediction)
+## Gate — the guarantee, in your words
 (not yet answered)
