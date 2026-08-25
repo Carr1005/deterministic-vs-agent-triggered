@@ -7,23 +7,30 @@
 
 ## Step 1 — three runs, same input
 
-- **Predict:** "Same code, same question, three runs. Will the three transcripts match?
-  Will the model call a memory tool every time?"
-- **Run (three times):** `.venv/bin/python src/snackbot.py "Suggest a quick snack for me."`
-- **Observe (shape):** runs differ. Some show `[tool] search_memory(...)` and answer
-  safely; a run may show **no tool line at all** — and that run is both the **cheapest**
-  on the meter *and* the one that can recommend peanuts. If all three behave the same,
-  note it honestly — Round 4 exists because three runs is not a measurement.
+- **Predict:** "Same code, same question, three runs. Two predictions: will the model
+  reach for memory — and where will the meter land against your Round-1 24 and Round-2 106?"
+- **Run (three times):** `.venv/bin/python src/snackbot.py "I'm in Paris — suggest a quick sweet snack for me."`
+- **Observe (shape):** `[tool]` lines on every run, and safe answers. Two things to say
+  out loud:
+  1. **the query is the model's own words.** It searched for something like *"user
+     dietary restrictions allergies preferences"*; memory stores *"I'm allergic to
+     almonds"*. No keyword in common — that is S3.3 working, and Q2's answer on screen.
+  2. **the meter went up, not down** — roughly `in≈158`, *above* Round 2's ~106. A tool
+     round-trip sends the schemas, then sends the results back: two calls where the
+     preload made one. Agent-triggered is not automatically cheaper.
+  Nothing here *guarantees* the read: the model could skip it and answer from priors. On
+  this model it doesn't — which is why Round 4 counts rather than trusting three runs.
 
 ## Step 2 — the semantic gap, live
 
-- **Predict:** "Ask about trail mix. If the model checks memory, what phrase will *it*
-  search for — and what phrase is actually stored?"
-- **Run:** `.venv/bin/python src/snackbot.py "Is trail mix a good snack for me?"`
-- **Observe (shape):** the `[tool]` line shows the *model's* wording (dietary
-  restrictions / allergies) yet surfaces the stored 'allergic to peanuts' — S3.3
-  working. Trail mix may compose **both** tools (memory: allergy; knowledge base: trail
-  mix contains peanuts).
+- **Predict:** "Ask about a financier — nothing in the name says almond. If the model
+  checks memory, what phrase will *it* search for, and what phrase is actually stored?"
+- **Run:** `.venv/bin/python src/snackbot.py "Is a financier a good snack for me?"`
+- **Observe (shape):** **both** tools fire — `search_memory(...)` for the allergy and
+  `search_knowledge_base('financier … ingredients allergens')` for what a financier is —
+  and the reply is a flat *"No — not safe for you. Financiers are traditionally made with
+  almond flour."* Neither store alone could answer that: memory knows the person, the
+  knowledge base knows the pastry. No rule written in advance covers it.
 
 ## Step 3 — open floor  `[R3 · EXPAND]`
 

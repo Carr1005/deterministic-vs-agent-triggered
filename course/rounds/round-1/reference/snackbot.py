@@ -26,6 +26,6 @@ def run_turn(user_msg: str) -> str:
 
 
 if __name__ == "__main__":
-    QUESTION = "Suggest a quick snack for me."
+    QUESTION = "I'm in Paris — suggest a quick sweet snack for me."
     print(f"you → {QUESTION}")
     print(f"bot ← {run_turn(QUESTION)}")

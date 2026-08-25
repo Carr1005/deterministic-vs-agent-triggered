@@ -5,7 +5,14 @@ This file is the **question-writing standard** — for curriculum authors editin
 `course/TUTORING.md`). Every rule below was earned the hard way: each one names a wording
 failure that a real learner actually hit, with the bad and the fixed version side by side.
 
-Check every drafted Ask, rung, Accept-if and Reveal against all eight before it ships.
+Check every drafted Ask, rung, Accept-if and Reveal against all of them before it ships.
+
+**Before you draft anything, finish the audit.** Read the round's every demo `Predict`
+step, every naming step in its other questions, the gate of the round *after* this one
+(it may depend on this round's output), and the clause the question must fill. Most bad
+drafts are not bad writing — they are questions that duplicate a demo step, re-collect a
+recorded answer, or fill a clause that already has its content. You cannot see any of
+that from the question alone.
 
 ## 1. Plain developer speech
 
@@ -22,6 +29,13 @@ you would rephrase it while saying it, it fails.
 
 > ✗ "Where does each live, that one dies and the other doesn't?"
 > ✓ "Where do a program's variables live while it runs?"
+
+**Match the question word to the answer's category.** "Who" requests a person, so a
+"who" question about a system component invites "me" or "the user". Ask "what part of
+this system…" when the answer is a component.
+
+> ✗ "Who could have known that read was pointless?"   (a learner can answer "I did")
+> ✓ "What part of this system is reading the question when that read fires?"
 
 ## 2. Produce, don't pick
 
@@ -51,6 +65,13 @@ to the industry term so the learner leaves with both:
 
 > ✓ "In your codebase you'd file this under metrics or usage logging; here it's one
 >   small module the course calls the **meter**."
+
+And **never coin a term.** The naming step attaches names that already exist — a course
+term or an industry term. A word invented while drafting is worse than jargon, because
+nobody can look it up.
+
+> ✗ "…no rule can preload the right **world-fact** for every question."  (invented here)
+> ✓ "…facts about the user come from one store, facts about snacks from the other."
 
 ## 4. Match effort to difficulty
 
@@ -86,6 +107,15 @@ answer is half-given.
 > ✓ Ask: "…nothing on screen tells you what it cost." — the enumeration is the
 >   learner's to produce at the rung, or the reveal's to give.
 
+**Circularity is the same defect wearing a question mark.** If the answer is the Ask's
+own words rearranged, nothing is produced. Test it by trying to answer using only words
+already in the question.
+
+> ✗ "Why doesn't flipping the reads force the writes to flip too?"
+>   → "because they're independent decisions" — the question said it first
+> ✓ ask for a consequence the learner has to work out, and let the principle be the
+>   thing you attach afterwards
+
 ## 7. Never cite the video; share its terms only
 
 "The video said…" points at an experience the learner may not have had — the course never
@@ -114,9 +144,51 @@ how rounds drag.
 >   with Accept-if: "reads-and-writes AND the classification located in…"
 > ✓ beat 1: the term (one line, one accept) → beat 2: who invokes (one Ask, one accept)
 
+## 9. Ask what *is*, not what *isn't*
+
+Absence questions — "what's missing", "what can't it do", "what must it survive" — force
+an unbounded search: imagine everything that could be absent, then guess which gap the
+author meant. Two of this course's worst questions had exactly this shape. Rewrite as a
+positive question about what something *does*, or about which part does it.
+
+> ✗ "What must the stored conversation survive?"
+> ✗ "What can't Round 2's design answer here?"
+> ✓ "Where do a program's variables live, and where does `memory.db` live?"
+
+## 10. The expected answer must be the only good answer
+
+Before shipping, write down three answers a sharp learner might actually give. If a
+*good* one fails your Accept-if, the question is broken — not the learner. This is the
+most common way a question that reads fine on paper collapses in a session.
+
+> ✗ "When do you finally find out?" — with criteria accepting only "at recall time".
+>   The best answer is **"maybe never"**, and it would have been scored a miss.
+> ✗ "Code, or the model?" — a sharp learner answers **"it's all code in the end"**, and
+>   they are right; the question had to be rebuilt around *what decides*, not who runs.
+
+## 11. The naming step must pay its way
+
+After accepting, say something the learner did not just say: the consequence, the cost,
+the failure it prevents, or where this returns later in the course. Announcing that an
+answer was important is applause, not teaching.
+
+> ✗ "That's the course's real thesis showing up three rounds early."
+> ✓ "…and this is worse than the Round 2 version: there, a skipped write left your
+>   preload thin; here the model asks, hears silence, and treats silence as an answer."
+
 ---
 
-**The test before shipping any question:** could the learner answer it from what's on
-screen, in one short sentence, without knowing this course's internal vocabulary? Would
-a bored senior engineer find it quick-but-fair rather than riddle-like? If either answer
-is no, it fails one of the eight — find which.
+**The test before shipping any question**, in order:
+
+1. **Is it already answered?** Does a recorded answer, a naming step, or a demo step
+   already cover it? If so, state it — don't ask it.
+2. **Does the clause it fills still need content?** A clause whose body says "unchanged
+   from …" usually does not.
+3. **Three sharp answers.** Write them down. Do they all pass your Accept-if?
+4. **Read the Ask aloud.** Would you rephrase it while speaking? Then rewrite it.
+5. **Answer it using only the question's own words.** If you can, it is circular.
+6. **Does the naming step add anything** beyond "that was important"?
+
+Could a bored senior engineer answer it in one short sentence, from what's in front of
+them, without knowing this course's internal vocabulary — and feel it was quick and fair
+rather than a riddle? If not, it fails one of the rules above. Find which.

@@ -1,5 +1,5 @@
 # seed_memory.py — course fixture. Run once during setup (and by reset_memory.py).
-# Writes a PREVIOUS SESSION into the database — including the peanut allergy —
+# Writes a PREVIOUS SESSION into the database — including the almond allergy —
 # before the learner ever runs the bot. Round 1 is built on that fact.
 import json
 import os
@@ -16,20 +16,20 @@ THREAD_ID = "snackbot-demo"
 CONVERSATION = [
     ("user", "Hi! Any snack ideas for this afternoon?"),
     ("assistant", "Happy to help — anything I should know before I suggest something?"),
-    ("user", "Yes, important: I'm allergic to peanuts. Severely. Please never suggest them."),
-    ("assistant", "Understood. I'll avoid peanuts and anything containing them."),
-    ("user", "Thanks. I'm in Taipei, so local snacks are a plus."),
+    ("user", "Yes, important: I'm allergic to almonds. Severely. Please never suggest them."),
+    ("assistant", "Understood. I'll avoid almonds and anything containing them."),
+    ("user", "Thanks. I'm in Paris, so local pastries are a plus."),
 ]
 
 # Snack and allergen facts the bot may consult.
 KNOWLEDGE = [
-    "Trail mix almost always contains peanuts and other nuts.",
-    "Peanut butter energy balls are made from oats, honey and peanut butter. They contain peanuts.",
-    "Sunflower seed butter is the usual substitute for people who must avoid peanuts.",
-    "Edamame is steamed young soybeans: high in protein, naturally peanut-free.",
-    "Rice crackers (senbei) are a common Taiwanese snack; check labels, as some are coated with peanut.",
-    "Pineapple cake is a Taiwanese specialty of pineapple jam in buttery pastry, and is peanut-free.",
-    "A severe peanut allergy can cause anaphylaxis. Strict avoidance is the only reliable prevention.",
+    "Macarons are made with almond flour; every macaron contains almonds.",
+    "Financiers are small cakes made largely of almond flour.",
+    "Frangipane, the filling in galette des rois and pithiviers, is an almond cream.",
+    "Croissants and pain au chocolat are butter, flour and yeast, and contain no almonds.",
+    "Meringues are egg white and sugar, naturally almond-free.",
+    "Madeleines are small butter sponge cakes; the classic recipe contains no almonds.",
+    "A severe almond allergy can cause anaphylaxis. Strict avoidance is the only reliable prevention.",
 ]
 
 

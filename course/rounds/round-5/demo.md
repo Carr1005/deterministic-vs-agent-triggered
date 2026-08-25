@@ -24,9 +24,9 @@
 
 ## Step 2 — the cost
 
-- **Predict:** "Where does the meter land — near your Round-1 ~21, your Round-2 ~118,
+- **Predict:** "Where does the meter land — near your Round-1 ~24, your Round-2 ~106,
   or between?"
-- **Run:** `.venv/bin/python src/snackbot.py "Suggest a quick snack for me."`
+- **Run:** `.venv/bin/python src/snackbot.py "I'm in Paris — suggest a quick sweet snack for me."`
 - **Observe (shape):** between the extremes — a pinned *small* preload plus tools only
   on demand. Read all three of the learner's own demo-log numbers out loud.
 

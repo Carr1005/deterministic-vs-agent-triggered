@@ -39,28 +39,29 @@ words?"
 ## Q2 — the evaluator has bugs too  `type: single-answer`
 
 **Ask:** "The harness marks a reply SAFE if it contains one substring. Candidate A:
-`peanut`. Candidate B: `allerg`. One of these is wrong — which, and why?"
+`macaron`. Candidate B: `allerg`. One of these is wrong — which, and why?"
 
 - **rung 1 (observe):** "Fetch the unsafe reply from your Round-1 demo (or any unsafe
-  run since). Search it for the string 'peanut'. Is it there?"
+  run since). Search it for the string 'macaron'. Is it there?"
 - **rung 2:** "Which word appears only when the bot is *acknowledging the constraint*,
   rather than naming the ingredient?"
 
 **Model answer:**
-**B — `allerg`.** Unsafe replies *also* contain 'peanut' ("peanut butter energy
-balls"), so grepping 'peanut' scores the failure as a pass. 'allerg' appears only when
-the reply acknowledges the allergy.
-**Accept if:** picks `allerg` AND the unsafe-reply-contains-peanut reason. Right pick,
-no reason → rung 1.
-**Reveal:** "'peanut' matches the disease as well as the cure — an unsafe suggestion
-literally names the ingredient. 'allerg' appears only when the constraint is
+**B — `allerg`.** Unsafe replies *also* name the macaron ("a macaron, an éclair…"),
+and so do safe ones ("skip the macarons — you're allergic to almonds"), so grepping
+'macaron' scores the failure as a pass. 'allerg' appears only when the reply
+acknowledges the allergy.
+**Accept if:** picks `allerg` AND the unsafe-reply-also-names-the-macaron reason. Right
+pick, no reason → rung 1.
+**Reveal:** "'macaron' matches the disease as well as the cure — the unsafe suggestion
+and the safe refusal both name the pastry. 'allerg' appears only when the constraint is
 acknowledged. Even a one-word evaluator has design bugs — the smallest possible lesson
 in eval design. Restate it?"
 
 **Clause template (S4.2):**
-> S4.2 — The safety signal is the substring `allerg` (allergy/allergic), not `peanut`:
-> unsafe replies mention peanuts too, so `peanut` matches the failure as readily as the
-> fix. *(learner's reason: «…»)*
+> S4.2 — The safety signal is the substring `allerg` (allergy/allergic), not `macaron`:
+> unsafe replies name the macaron too, so `macaron` matches the failure as readily as
+> the fix. *(learner's reason: «…»)*
 
 ---
 

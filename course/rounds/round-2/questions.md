@@ -77,8 +77,8 @@ find out ___ — or never."
 
 ## Gate
 
-Round 1's bot had the allergy sitting in its database and still recommended peanut
-butter. Your design makes that impossible. One sentence, own words: how would you
+Round 1's bot had the allergy sitting in its database and still recommended a
+macaron. Your design makes that impossible. One sentence, own words: how would you
 explain to a user why it can't happen again?
 
 - **rung** *(vague — "because it has memory now")*: "What would have to go wrong for the

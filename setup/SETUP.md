@@ -48,7 +48,7 @@ interpreter at `.venv\Scripts\python.exe`, and you'd be translating every comman
 ## 3. The memory is already seeded — nothing to do
 
 The course's opening premise ships with the repo. `setup/fixtures/memory-seed.db` holds
-a *previous session* — including the user's peanut allergy — in three tables:
+a *previous session* — including the user's almond allergy — in three tables:
 `CONVERSATIONAL_MEMORY` (exact lookups) plus `CONVERSATION_VECTORS` and
 `SEMANTIC_MEMORY` (the two the search tools read). Bootstrap copies it to `memory.db`,
 so the allergy is stored **before you ever run the bot**. Round 1 is built on that.

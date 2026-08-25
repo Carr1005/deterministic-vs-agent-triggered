@@ -9,7 +9,7 @@ run — a fixed rule, or the model's choice — and understand why the *meter* m
 before any memory design.
 
 **Scene-set (say briefly before Q1):** the database shipped with a previous session
-already in it — the peanut allergy is *already stored*. Yet `src/snackbot.py` today is a
+already in it — the almond allergy is *already stored*. Yet `src/snackbot.py` today is a
 bare LLM call. This round we don't fix that; we name the problem and build the
 instrument.
 

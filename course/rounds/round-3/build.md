@@ -11,6 +11,9 @@ untouched), S3.3 (vector search via the course embedding model).
 **Change:** patch toward `reference/snackbot.py`:
 - remove the `user_facts` preload from the prompt (the `read_user_facts` *definition*
   stays — it returns in Round 5);
+- extend `SYSTEM_PROMPT` to tell the model it *has* memory and a knowledge base —
+  offering a tool is not enough on its own; a model that is never told the tools
+  matter will not call them;
 - add the semantic layer (`embed`, `cosine`, `semantic_search`) and the two tools
   (`search_memory`, `search_knowledge_base`);
 - add the tool-call loop in `run_turn`;

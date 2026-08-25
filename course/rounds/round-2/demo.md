@@ -8,9 +8,9 @@
 ## Step 1 — the fix, measured
 
 - **Predict:** "Same snack question as Round 1. Two predictions: safe or not — and what
-  does the meter's `in` do versus your baseline of ~21?"
-- **Run:** `.venv/bin/python src/snackbot.py "Suggest a quick snack for me."`
-- **Observe (shape):** a safe suggestion; `[meter]` roughly `in≈118` — about **5× your
+  does the meter's `in` do versus your baseline of ~24?"
+- **Run:** `.venv/bin/python src/snackbot.py "I'm in Paris — suggest a quick sweet snack for me."`
+- **Observe (shape):** a safe suggestion; `[meter]` roughly `in≈106` — about **4× your
   Round-1 baseline**.
 
 ## Step 2 — process death
@@ -26,8 +26,8 @@
 
 - **Predict:** "The next question needs no memory at all. Does the preload run anyway?
   What will the meter show?"
-- **Run:** `.venv/bin/python src/snackbot.py "Is it raining in Taipei right now?"`
-- **Observe (shape):** full preload cost for zero benefit — same ~5× range.
+- **Run:** `.venv/bin/python src/snackbot.py "Is it raining in Paris right now?"`
+- **Observe (shape):** full preload cost for zero benefit — same ~4× range.
   Deterministic fails on **cost, visibly, every turn**. The number may even have grown:
   every demo turn is saved and re-read. Memory systems contaminate their own
   measurements — hold that thought for Round 5.
@@ -42,7 +42,7 @@ preload, latency changes. Answer plainly. Done → record.
 ```
 ## round 2 — YYYY-MM-DD
 - snack question input tokens: <in>   (~<n>× my round-1 baseline)
-- taipei question input tokens: <in>
+- weather question input tokens: <in>
 - new process recalled last session? <yes/no>
 - note: <one line, own words — the failure axis>
 ```
