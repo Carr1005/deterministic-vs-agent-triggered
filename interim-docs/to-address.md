@@ -46,15 +46,90 @@ Not learner content. Items land here when flagged in design review; remove when 
 
 ## Open
 
-### 1. Demo punchlines are probabilistic
-R1 assumes an unsafe baseline reply; R4 assumes ~2–4/5 SAFE. Demos treat outputs as shapes
-("any honest number is data"), but the narrative payoff needs failure to actually appear.
-First live evidence, one run on `gpt-5-mini`: with the allergy seeded in the database, the
-round-0 baseline answered "apple slices with **peanut butter**" — R1's punchline fires.
-One data point, not a rate.
-- [ ] Measure the R1 unsafe-reply rate over ~10 runs, and the R4 distribution.
-- [ ] If the model is "too safe", strengthen the seeded phrasing or the demo question —
-      not the prose.
+### 1. Demo punchlines are probabilistic — R1 measured and fixed; R3/R4 still open
+**R1: resolved.** The old question `"Suggest a quick snack for me."` scored 10/10 unsafe on
+`gpt-5-mini`, but only because peanut butter happened to be that model's modal answer —
+a coincidence that any model update could erase. Measured alternatives, 10 runs each:
+
+| input | allergen item in the reply |
+|---|---|
+| `"I'm in Paris — suggest a quick snack for me."` | 6/10 |
+| **`"I'm in Paris — suggest a quick sweet snack for me."`** | **10/10** ← adopted |
+| `"I'm in Paris — suggest a quick pastry for me."` | 0/10 (collapses to croissant) |
+| `"I'm in Lisbon — …"` (pastel de nata / egg) | 8/8 |
+| `"I'm in Istanbul — …"` (simit / sesame) | 8/8 |
+
+Paris/almond/macaron won because the allergen is **hidden**: "almond" appeared in only
+1/10 replies, so the knowledge base is required to detect the danger — where "peanut
+butter" and "sesame-crusted simit" name themselves and leave the KB decorative.
+
+**R3/R4: both resolved, by two measurements.**
+- **Tool-call drought — fixed at the prompt level.** `gpt-5-mini` called `search_memory`
+  **0 of 20 times** while the system prompt said nothing about memory. Adding one sentence
+  ("You have memory of past conversations… You may consult them if useful") took it to
+  **19 of 30**, and an *earlier, stronger* wording ("consult them when they would make your
+  answer more accurate") pinned it at 10/10 — too reliable to leave R4 anything to count.
+  The committed prompt is the weaker one. So the rate is **not** binary, as this file
+  previously recorded: 63% is a genuine middle, and R3's "runs differ" holds — with the
+  caveat that R3's *three* runs come out uniform `0.63³ + 0.37³ ≈ 30%` of the time.
+- **The `allerg` signal was inert — replaced by `almond`.** Confirmed at 30 runs: `allerg`
+  appeared in **30/30** replies, including all 11 that recommended a macaron, because the
+  bot offers "any allergies?" in the same breath. `--x5` could only ever print 5/5.
+  `macaron` scores identically (19/30 — it is present in safe and unsafe replies alike).
+  `almond` scores **28/30** and is present in 21/30, so `--x5` prints 3–4 of 5, and R5's
+  pinned read measured **10/10**, preserving R5's 5/5 and the R4→R5 comparison. Ground
+  truth was hand-adjudicated and corroborated: `avoid` is present in exactly the 19 safe
+  runs and absent from all 11 dangerous ones.
+- [x] Fix the drought at the prompt level.
+- [x] Redesign R4's Q2 and the S4.2 signal around what the model actually writes.
+- [x] Q1 split into two beats, each with one Accept-if, and its premise replaced with
+      Round 3's *design* ("the read happens only if the model decides to call the tool"),
+      which is true whatever the learner's three runs did.
+- [x] The Gate keeps both restatements but adopts Round 5's declared format — numbered,
+      one criterion each — and gains the anti-drag guard the other four gates all had and
+      R4 alone lacked ("accept the first recognisable version of each, one rung max").
+- [x] S4.1 no longer names the criterion: it counts "the replies the signal marks safe"
+      and leaves the signal to S4.2, and `run_n` now prints `N/5 replies contained
+      'almond'` — the output names its own test instead of claiming the reply
+      acknowledged anything. R4's demo also gained the missing caveat: a SAFE verdict is
+      not proof, since ~2 runs in 30 score SAFE without ever consulting memory.
+- **R4 is closed.**
+- [x] **R5's cost story was false by construction, not by contamination.** Step 2 asked
+      "near ~24, near ~106, or between?" and answered "between". But
+      `round-2/reference/snackbot.py:47,51` and `round-5/reference/snackbot.py:109,113` are
+      byte-identical — same `read_user_facts()`, same message composition — and both meters
+      join the same messages. The only difference is the system prompt (R2 one sentence
+      ~10 tok, R5 three ~45), so **R5 = R2 + ~35 tok before any tool result**. Measured on
+      a fresh seed: `in=134` (no tool) / ~238 (with tools) against R2's 106. Step 2 now
+      compares against Round 3's two numbers and says the true thing: the pin does not buy
+      a cheaper design, and Round 3's `in≈52` was never purchasable because it was cheap
+      only by skipping the check. Fixed as narrative, not design — see the next item.
+- [x] **Step 2's reset moved.** Step 1's `--x5` writes 10 rows the pinned read then loads,
+      so Step 2 printed `in≈1573`. It now resets immediately before measuring; measured
+      134 → (batch climbs to 1729) → reset → 134, exactly reproducible.
+- [x] **Step 1 gained the compounding cost**, which no round had ever mentioned: across a
+      `--x5` batch the meter climbs ~**+300 tok per turn** (measured 470 → 799 → 1098 →
+      1422 → 1729), because each turn's deterministic write becomes part of the next turn's
+      pinned read. The only cost in the course that grows with use.
+- [x] **R5's authoring gaps:** Q5.3 and Q5.4 gained the reveals the other four had; the six
+      operations gained one authored Ask template in the group header (previously the tutor
+      improvised all six of the course's central prompts); and Q5.6's orphaned Verdict
+      block — stranded below a `---` while the text pointed "above" — was reunited with its
+      question.
+- **R5 is closed.**
+
+**Two R5 findings recorded but deliberately not fixed:**
+- **Q5.1's description does not match its code.** It says `read_user_facts` "loads the
+  user's stored facts (allergies, preferences)"; the function does
+  `SELECT role, content FROM CONVERSATIONAL_MEMORY` — the entire transcript, assistant
+  turns included. Narrowing it would make the preload genuinely "small" and would let the
+  old "between the extremes" claim stand, but `read_user_facts` is shared with Round 2, so
+  R2's documented `in≈106` and its "about 4× your baseline" claim would both move, and
+  BUILD's payoff line ("two lines, exactly where the learner's own Q5.1 verdict put them")
+  would stop being true. Not worth a cascade into a closed round.
+- **The compounding cost has no ceiling.** Nothing truncates the pinned read, so a long
+  session's preload grows without bound. Out of scope for a five-round course, but it is
+  the obvious next design question and Q5.6's summarize-and-store is where it belongs.
 
 ### 2. Drift repair path (partially addressed — monitor in trials)
 Mode tags on every reply, re-anchor after compaction / ~15 turns, learner levers

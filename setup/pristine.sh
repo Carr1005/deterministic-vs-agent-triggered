@@ -30,14 +30,14 @@ bad() { echo "FAIL  $1"; fail=1; }
 count() { local n; n="$(grep -cE "$1" "$2" 2>/dev/null || true)"; echo "${n:-0}"; }
 
 echo "== answers (every question must still hold its placeholder)"
-expected="3 4 4 3 8"; i=1; total=0
+expected="3 3 3 4 8"; i=1; total=0   # R4 and R5 each record two gate restatements
 for want in $expected; do
   got="$(count '\(not yet answered\)' "course/rounds/round-$i/answers.md")"
   if [ "$got" = "$want" ]; then ok "round-$i/answers.md — $want placeholders"
   else bad "round-$i/answers.md — $got placeholders, expected $want (questions were answered here)"; fi
   total=$((total + got)); i=$((i + 1))
 done
-if [ "$total" = 22 ]; then ok "22 placeholders in total"; else bad "$total placeholders in total, expected 22"; fi
+if [ "$total" = 21 ]; then ok "21 placeholders in total"; else bad "$total placeholders in total, expected 21"; fi
 
 echo "== spec (must be the empty scaffold)"
 n="$(count '^> S[1-5]\.' spec/spec.md)"

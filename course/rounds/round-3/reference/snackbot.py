@@ -10,7 +10,11 @@ from openai import OpenAI
 client = OpenAI()
 MODEL = "gpt-5-mini"
 
-SYSTEM_PROMPT = "You are SnackBot, a snack-recommendation assistant."
+SYSTEM_PROMPT = (
+    "You are SnackBot, a snack-recommendation assistant. You have memory of past "
+    "conversations with this user, and a knowledge base of snack and allergen facts. "
+    "You may consult them if useful."
+)
 
 
 def call_llm(messages, tools=None):
@@ -50,7 +54,7 @@ def save_turn(role: str, content: str) -> None:
 # ---- S3.1: agent-triggered reads — two TOOLS over the same database ---------
 # S3.3: semantic search — matches by meaning, not keywords. An embedding is just
 # a list of numbers; two texts that mean the same thing get nearby lists, so the
-# comparison below finds "allergic to peanuts" from a query about "dietary needs".
+# comparison below finds "allergic to almonds" from a query about "dietary needs".
 EMBED_MODEL = "text-embedding-3-small"
 
 
@@ -131,6 +135,6 @@ def run_turn(user_msg: str) -> str:
 
 
 if __name__ == "__main__":
-    QUESTION = " ".join(sys.argv[1:]) or "Suggest a quick snack for me."
+    QUESTION = " ".join(sys.argv[1:]) or "I'm in Paris — suggest a quick sweet snack for me."
     print(f"you → {QUESTION}")
     print(f"bot ← {run_turn(QUESTION)}")

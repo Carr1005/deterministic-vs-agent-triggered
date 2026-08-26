@@ -20,15 +20,25 @@
   of five now?"
 - **Run:** `.venv/bin/python src/snackbot.py --x5`
 - **Observe (shape):** **5/5** — the pinned read is not a judgment call; it cannot be
-  skipped.
+  skipped. Then read the `[meter]` lines *down the batch*: the first run sits near
+  `in≈134` and the fifth is past `in≈1300`, climbing roughly **+300 tokens per turn**.
+  Every turn's deterministic write becomes part of the next turn's pinned read. Round 2's
+  write rule and this round's read pin are compounding in front of them — the one cost in
+  this course that grows with use instead of staying flat.
 
 ## Step 2 — the cost
 
-- **Predict:** "Where does the meter land — near your Round-1 ~21, your Round-2 ~118,
-  or between?"
-- **Run:** `.venv/bin/python src/snackbot.py "Suggest a quick snack for me."`
-- **Observe (shape):** between the extremes — a pinned *small* preload plus tools only
-  on demand. Read all three of the learner's own demo-log numbers out loud.
+- **Predict:** "Round 3 gave you two numbers: `in≈52` when it skipped memory, `in≈142`
+  when it checked. Round 2 was `in≈106`, safe every time. With the read pinned — where
+  does a single turn land?"
+- **Run:** `.venv/bin/python setup/reset_memory.py` — again, and not as decoration: they
+  just watched the batch inflate its own input.
+- **Run:** `.venv/bin/python src/snackbot.py "I'm in Paris — suggest a quick sweet snack for me."`
+- **Observe (shape):** **`in≈134`** — *above* Round 2's 106, because the memory-aware
+  system prompt rides along on every turn; nearer `in≈240` if this turn also reached for a
+  tool. Say the honest version out loud: **they did not buy a cheaper design.** They bought
+  one whose failure mode they chose. And Round 3's `in≈52` was never purchasable — it was
+  cheap only because it skipped the check. Read all three of their own demo-log numbers.
 
 ## Step 3 — open floor  `[R5 · EXPAND]`
 
@@ -47,8 +57,10 @@ Done → record.
 `git add course/demo-log.md && git commit -m "round-5 demo"`
 
 ## Demo expectation (for the close)
-After the pin: `--x5` → **5/5**; single-turn meter lands **between** the Round-1
-baseline and the Round-2 preload. The trade-off was chosen, not stumbled into.
+After the pin: `--x5` → **5/5**, with the meter climbing across the batch as each write
+feeds the next read. A single turn on a fresh reset lands `in≈134` — **above** Round 2's
+106, not between it and the baseline. The trade-off was chosen, not stumbled into: the
+cheap Round-3 turn was only ever cheap because it skipped the check.
 
 ## Wrap-up
 

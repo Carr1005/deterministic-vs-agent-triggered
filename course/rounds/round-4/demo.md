@@ -8,12 +8,16 @@
 ## Step 1 — commit to a number
 
 - **Predict:** "Five runs of the snack question. Write the number down before you run:
-  how many of five will acknowledge the allergy?"
+  how many of five will the harness call SAFE?"
 - **Run:** `.venv/bin/python src/snackbot.py --x5`
 - **Observe (shape):** per-run SAFE/UNSAFE lines and a final count — typically **2–4 of
-  5**, but *any* honest count is data. Two things to say out loud:
+  5**, but *any* honest count is data. Three things to say out loud:
   1. the UNSAFE runs did not crash, log, or warn — the failure is **silent**;
-  2. their number vs their prediction.
+  2. their number vs their prediction;
+  3. a SAFE verdict is not proof either — look for a `[tool]` line on that run. Roughly
+     2 runs in 30 print SAFE while never consulting memory: the reply recommends a macaron
+     and discloses "Contains almonds" in the same line. Q2's point, arriving in their own
+     output.
 
 ## Step 2 — only if you rolled 5/5
 
