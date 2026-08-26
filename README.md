@@ -10,6 +10,20 @@ You don't read this course. You build it — in five rounds, with a coding agent
 Socratic tutor, against a real LLM and a real database. Your numbers will differ from
 everyone else's. That is part of the lesson.
 
+## Start here
+
+```bash
+git clone https://github.com/Carr1005/deterministic-vs-agent-triggered.git snackbot-my-run
+cd snackbot-my-run
+export OPENAI_API_KEY=sk-...
+```
+
+Open your coding agent in that folder and say **"start the course."** Python 3.10+, git,
+an API key; a few cents for the whole thing.
+
+*No `[R1 · TUTOR]` tag in the first reply? The agent didn't load the course rules — say
+"Read AGENTS.md and start the course" instead. [Quickstart](#quickstart) has the details.*
+
 ## The pedagogical pattern
 
 Every round runs the same loop. Each phase ends in a git commit carrying exactly one
@@ -26,8 +40,10 @@ artifact, so the repository itself is the courseware:
    questions, or "go look at this") before answers, never a lecture. Each question is
    authored so that *its correct answer is a specification clause*. Your accepted
    answers are written into the round's `answers.md` as you go — in your words.
-2. **Your right answer fills the scaffolded spec.** The tutor drafts each clause from
-   *your* recorded words, you confirm the wording, and it lands in `spec/spec.md`.
+2. **Your right answer fills the scaffolded spec.** Most clauses the tutor drafts from
+   *your* recorded words, and you confirm the wording before it lands in `spec/spec.md`.
+   A few it states outright — where you already argued the point an earlier round — and
+   it tells you when it is doing that.
 3. **Observe the spec diff.** `git diff` shows exactly which requirements your answers
    just created. The spec was not handed to you — you argued it into existence.
 4. **The coding agent builds against the spec.** A minimal diff to one file
