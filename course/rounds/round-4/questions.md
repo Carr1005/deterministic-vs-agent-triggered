@@ -12,20 +12,35 @@ one-word evaluator has design decisions in it.
 
 ## Q1 — the honest minimum  `type: single-answer`
 
-**Ask:** "In your Round-3 demo some runs checked memory and some didn't — same code,
-same input. So: what does one passing run prove about this system, and what is the
-smallest *honest* alternative to a single run?"
+**Beat 1 — what one run proves (quick win, keep it light):**
+
+**Ask:** "Round 3's memory read happens only if the model decides to call the tool. You
+run it once and the reply is safe. What does that tell you about the next run?"
 
 - **rung 1:** "A coin lands heads once. What do you now know about the coin?"
-- **rung 2:** "You can't make the model's choice deterministic from out here. What
+- **Accept if:** nothing / almost nothing / it's one sample. Any phrasing.
+- On accept: "Right — one run is one sample from a per-turn coin flip." → beat 2. No
+  recording yet; Q1 records once, after beat 2.
+
+**Beat 2 — the honest minimum:**
+
+**Ask:** "You can't reach into the model and force that decision. So leave the bot alone
+and change how you *test* it — what's the least you could do and still have something
+honest to report?"
+
+- **rung 1:** "You can't make the model's choice deterministic from out here. What
   *can* you make deterministic about the way you measure it?"
+- **rung 2:** "Your Round-3 log has three runs in it. What did you have to write down to
+  record them?"
 
 **Model answer:**
 One passing run proves **nothing** — the tool call is a per-run judgment; a pass may be
 luck. Honest minimum: **run the same input N times and count** (N=5 here; report
 safe/total).
-**Accept if:** "nothing / almost nothing" + repeat-and-count. "Test it more" without a
-count → half credit, rung 2.
+**Accept if:** repeat the same input and count — a fraction with a denominator. "Test it
+more" without a count → rung 1. **"Pin the read so it always fires" is Round 5's answer
+and a good instinct** — say so, don't mark it wrong, then redirect: this round changes the
+test, not the design.
 **Reveal:** "Nothing — one run is one sample from a distribution. The honest minimum is
 repetition: same turn ×5, count safe replies, report the fraction. Evaluating a
 probabilistic system is counting; there is no cleverer trick in this course. Your
