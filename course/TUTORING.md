@@ -161,7 +161,7 @@ src/snackbot.py --x5`, and the same for `setup/show_memory.py` or
 preserved; the wrapper only also puts the run on the page. The phase files' commands are
 unchanged: runs the learner makes in their own terminal are theirs alone and are never
 captured, and if the wrapper ever errors, fall back to the bare command and keep going —
-this page is a window, never a gate. If the port was busy it will report a different one
-(on macOS, 5000 is often AirPlay's); use whatever it printed. When the learner stops for
+this page is a window, never a gate. If the port was busy it will report a different
+one; use whatever it printed. When the learner stops for
 the day, mention `bash tools/appview/serve.sh --stop` (it also expires on its own after
 an idle hour).

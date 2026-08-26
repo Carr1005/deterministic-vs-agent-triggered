@@ -549,7 +549,9 @@ def reaper(httpd, idle_minutes):
 
 def main():
     ap = argparse.ArgumentParser(add_help=True)
-    ap.add_argument("--port", type=int, default=5000)
+    # 5050, not 5000: on macOS, AirPlay Receiver permanently holds 5000, and the
+    # briefing tells every learner one URL — it should be true on every machine.
+    ap.add_argument("--port", type=int, default=5050)
     ap.add_argument("--idle", type=int, default=60,
                     help="shut down after N idle minutes (0 disables)")
     a = ap.parse_args()

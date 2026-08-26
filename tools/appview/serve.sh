@@ -16,7 +16,9 @@
 set -u
 cd "$(dirname "$0")/../.."
 
-PORT=5000
+# 5050, not 5000: macOS AirPlay Receiver permanently holds 5000, and the briefing
+# names one URL for every learner — it should be true on every machine.
+PORT=5050
 IDLE=60
 ACTION=""
 LOG="${TMPDIR:-/tmp}/snackbot-appview.log"
@@ -76,18 +78,26 @@ PYEOF
 
 case "$ACTION" in
   --stop)
-    if command -v lsof >/dev/null 2>&1; then
-      pids="$(lsof -ti "tcp:$PORT" 2>/dev/null || true)"
-      if [ -n "$pids" ]; then
-        echo "$pids" | while read -r pid; do kill "$pid" 2>/dev/null; done
-        echo "PASS  stopped whatever held port $PORT (pid: $(echo $pids | tr '\n' ' '))"
-      else
-        echo "NOTE  nothing is listening on port $PORT."
-      fi
-    else
+    if ! command -v lsof >/dev/null 2>&1; then
       echo "FAIL  lsof not found; stop it from the terminal it is running in (Ctrl-C)."
       exit 1
     fi
+    # The server may have walked past a busy $PORT at start, so scan the same range
+    # it walks — and kill only a port that answers OUR token, never a stranger.
+    stopped=0
+    p="$PORT"
+    while [ "$p" -le $((PORT + 5)) ]; do
+      if ours "$p"; then
+        pids="$(lsof -ti "tcp:$p" 2>/dev/null || true)"
+        if [ -n "$pids" ]; then
+          echo "$pids" | while read -r pid; do kill "$pid" 2>/dev/null; done
+          echo "PASS  stopped appview on port $p (pid: $(echo $pids | tr '\n' ' '))"
+          stopped=1
+        fi
+      fi
+      p=$((p + 1))
+    done
+    [ "$stopped" = 1 ] || echo "NOTE  no appview server found on ports $PORT-$((PORT + 5))."
     ;;
 
   --foreground)
@@ -100,7 +110,6 @@ case "$ACTION" in
       exit 0
     fi
     # Port occupied by something that is not ours: step aside rather than fight it.
-    # (On macOS, 5000 is often AirPlay Receiver — the walk lands on 5001.)
     start="$PORT"
     while port_taken "$PORT"; do
       echo "NOTE  port $PORT is in use by another process."
