@@ -95,6 +95,10 @@ else ok "no memory.db"; fi
 if [ -e .venv ]; then
   echo "NOTE  .venv present — git-ignored; delete before zipping (large, machine-specific)."
 else ok "no .venv"; fi
+if [ -e .snackbot-runs.jsonl ]; then
+  echo "NOTE  .snackbot-runs.jsonl present — git-ignored, so a clone is safe, but DELETE"
+  echo "      IT before zipping or copying: it holds a previous learner's recorded runs."
+else ok "no .snackbot-runs.jsonl"; fi
 
 echo
 if [ $fail -eq 0 ]; then echo "PRISTINE: PASS — safe to duplicate."
