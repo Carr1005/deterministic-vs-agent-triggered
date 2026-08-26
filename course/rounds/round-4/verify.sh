@@ -16,7 +16,7 @@ if [ "$want" = "$got" ]; then echo "PASS  src/ file list unchanged"; else echo "
 "$PY" -m py_compile src/snackbot.py src/meter.py src/seed_memory.py && echo "PASS  py_compile" || { echo "FAIL  py_compile"; fail=1; }
 
 need   "harness exists (S4.1)"              'def run_n'
-need   "signal is allerg (S4.2)"            'signal: str = "allerg"'
+need   "signal is almond (S4.2)"            'signal: str = "almond"'
 need   "--x5 flag wired (S4.1)"             '"--x5"'
 absent "reads still agent-triggered"        'user_facts = read_user_facts()'
 need   "writes still deterministic (S3.2)"  'def save_turn'

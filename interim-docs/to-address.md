@@ -63,16 +63,32 @@ Paris/almond/macaron won because the allergen is **hidden**: "almond" appeared i
 1/10 replies, so the knowledge base is required to detect the danger — where "peanut
 butter" and "sesame-crusted simit" name themselves and leave the KB decorative.
 
-**R3/R4: still open, and worse than "probabilistic".**
-- **Tool-call drought.** `gpt-5-mini` called `search_memory` **0 of 20 times** on the demo
-  questions. A probe shows it only fires when the question points at stored knowledge
-  ("based on what you know about me" → 4/8). So R3's "runs differ" and R4's "2–4 of 5"
-  have no behaviour to observe at all.
-- **The `allerg` signal is inert.** It appeared in 6/6 replies in every condition,
-  including replies recommending peanut butter, because the model routinely says "tell me
-  any allergies". `--x5` would print ~5/5 SAFE on a run that is 0/5 safe.
-- [ ] Fix the drought at the prompt level (the system prompt says nothing about memory).
-- [ ] Redesign R4's Q2 and the S4.2 signal around what the model actually writes.
+**R3/R4: both resolved, by two measurements.**
+- **Tool-call drought — fixed at the prompt level.** `gpt-5-mini` called `search_memory`
+  **0 of 20 times** while the system prompt said nothing about memory. Adding one sentence
+  ("You have memory of past conversations… You may consult them if useful") took it to
+  **19 of 30**, and an *earlier, stronger* wording ("consult them when they would make your
+  answer more accurate") pinned it at 10/10 — too reliable to leave R4 anything to count.
+  The committed prompt is the weaker one. So the rate is **not** binary, as this file
+  previously recorded: 63% is a genuine middle, and R3's "runs differ" holds — with the
+  caveat that R3's *three* runs come out uniform `0.63³ + 0.37³ ≈ 30%` of the time.
+- **The `allerg` signal was inert — replaced by `almond`.** Confirmed at 30 runs: `allerg`
+  appeared in **30/30** replies, including all 11 that recommended a macaron, because the
+  bot offers "any allergies?" in the same breath. `--x5` could only ever print 5/5.
+  `macaron` scores identically (19/30 — it is present in safe and unsafe replies alike).
+  `almond` scores **28/30** and is present in 21/30, so `--x5` prints 3–4 of 5, and R5's
+  pinned read measured **10/10**, preserving R5's 5/5 and the R4→R5 comparison. Ground
+  truth was hand-adjudicated and corroborated: `avoid` is present in exactly the 19 safe
+  runs and absent from all 11 dangerous ones.
+- [x] Fix the drought at the prompt level.
+- [x] Redesign R4's Q2 and the S4.2 signal around what the model actually writes.
+- [ ] **Still open in R4:** Q1's Ask and Accept-if are both compound, and its premise
+      ("some Round-3 runs checked memory and some didn't") is false for the ~1 learner in 3
+      whose three runs came out uniform. The Gate is a two-part restatement. S4.1's
+      "replies that acknowledge the allergy" overstates what a substring measures.
+- [ ] **Still open in R5:** demo Step 1's `--x5` writes 10 rows that Step 2's pinned read
+      then loads, so the meter prints `in≈1573` where Step 2 claims "between your Round-1
+      ~24 and Round-2 ~106". On a fresh reset it is 134 — the reset needs to move.
 
 ### 2. Drift repair path (partially addressed — monitor in trials)
 Mode tags on every reply, re-anchor after compaction / ~15 turns, learner levers

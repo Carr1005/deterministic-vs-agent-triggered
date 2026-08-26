@@ -7,7 +7,7 @@ committed as `round-4 tutor` when the gate passes.
 ## Q1 — what one passing run proves; the honest alternative
 (not yet answered)
 
-## Q2 — why the signal is "allerg", not "macaron"
+## Q2 — why `macaron` can't be the signal
 (not yet answered)
 
 ## Gate restatement
