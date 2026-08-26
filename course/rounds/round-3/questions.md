@@ -4,11 +4,11 @@
 > (read at phase entry — it is authoritative). Record accepted answers into `answers.md`
 > as you go.
 
-**Round goal:** hand the reads to the model as tools it decides when to call, and find out
+**Round goal:** hand the reads to the model as tools it may or may not call, and find out
 what that trade costs. Semantic matching is what makes tool-reads workable at all; the
-writes stay on their rule. The demo shows both stores composing on one question — and the
-meter going *up*, not down. Nothing now guarantees the read happens; **whether it happens
-is the model's call**, which is what Round 4 sets out to measure.
+writes stay on their rule. The demo exposes this design's failure axis — **it fails on
+reliability, silently** — and shows the sting in it: the run that skips the read is the
+*cheapest* one on the meter and the one that recommends the allergen.
 
 ---
 
