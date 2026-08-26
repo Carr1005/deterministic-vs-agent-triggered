@@ -1,0 +1,25 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# The memory store. State, not courseware — and tracking it would dirty
+# `git status --porcelain` on every turn, which IS the mid-TUTOR resume signal.
+memory.db
+
+# Coding-agent scratch files, ignored for the same reason: anything an agent
+# writes into this folder must never show up as a working-tree change.
+.aider*
+!.aider.conf.yml
+.claude/settings.local.json
+CLAUDE.local.md
+.gemini/tmp/
+
+# Captured trial sessions and anything generated from them. These are raw agent
+# session logs (hundreds of KB each) kept for analysis, not courseware — and because
+# `main` and `release` point at the same tree object, anything tracked here ships to
+# every learner. One was committed by accident once; this is why.
+interim-docs/trial-*/
+
+# macOS
+.DS_Store
