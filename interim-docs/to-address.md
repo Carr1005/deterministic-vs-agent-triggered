@@ -82,10 +82,18 @@ butter" and "sesame-crusted simit" name themselves and leave the KB decorative.
   runs and absent from all 11 dangerous ones.
 - [x] Fix the drought at the prompt level.
 - [x] Redesign R4's Q2 and the S4.2 signal around what the model actually writes.
-- [ ] **Still open in R4:** Q1's Ask and Accept-if are both compound, and its premise
-      ("some Round-3 runs checked memory and some didn't") is false for the ~1 learner in 3
-      whose three runs came out uniform. The Gate is a two-part restatement. S4.1's
-      "replies that acknowledge the allergy" overstates what a substring measures.
+- [x] Q1 split into two beats, each with one Accept-if, and its premise replaced with
+      Round 3's *design* ("the read happens only if the model decides to call the tool"),
+      which is true whatever the learner's three runs did.
+- [x] The Gate keeps both restatements but adopts Round 5's declared format — numbered,
+      one criterion each — and gains the anti-drag guard the other four gates all had and
+      R4 alone lacked ("accept the first recognisable version of each, one rung max").
+- [x] S4.1 no longer names the criterion: it counts "the replies the signal marks safe"
+      and leaves the signal to S4.2, and `run_n` now prints `N/5 replies contained
+      'almond'` — the output names its own test instead of claiming the reply
+      acknowledged anything. R4's demo also gained the missing caveat: a SAFE verdict is
+      not proof, since ~2 runs in 30 score SAFE without ever consulting memory.
+- **R4 is closed.**
 - [ ] **Still open in R5:** demo Step 1's `--x5` writes 10 rows that Step 2's pinned read
       then loads, so the meter prints `in≈1573` where Step 2 claims "between your Round-1
       ~24 and Round-2 ~106". On a fresh reset it is 134 — the reset needs to move.

@@ -47,8 +47,8 @@ probabilistic system is counting; there is no cleverer trick in this course. You
 words?"
 
 **Clause template (S4.1):**
-> S4.1 — Reliability is measured by repetition: the same turn runs **5×**, counting
-> replies that acknowledge the allergy, reported as `safe/total`. One passing run is
+> S4.1 — Reliability is measured by repetition: the same turn runs **5×**, counting the
+> replies the signal marks safe, reported as `safe/total`. One passing run is
 > not evidence. *(learner's phrasing: «…»)*
 
 ## Q2 — the evaluator has bugs too  `type: single-answer`
@@ -94,12 +94,19 @@ it was measured.
 
 ---
 
-## Gate
+## Gate — two restatements, own words
 
-Own words: **why control flow became probabilistic in Round 3, and what counting buys
-that a single green run cannot.** Record in `answers.md`, then:
+1. Why control flow became probabilistic in Round 3.
+2. What counting buys that a single green run cannot.
+
+Record both in `answers.md`, then:
 `git add course/rounds/round-4/answers.md && git commit -m "round-4 tutor"` → SPEC.
 
 **Gate criteria:**
-(a) probabilistic because the model decides per turn whether the safety-relevant read
-happens; (b) counting turns an anecdote into a measurement — a rate with a denominator.
+1. The model decides per turn whether the safety-relevant read happens. Already on record
+   from Round 3's Q1 ("who fires the read now") and its gate — a restatement, not new
+   content.
+2. A rate with a denominator turns an anecdote into a measurement — how often, not whether.
+
+Accept the first recognisable version of each. One rung max. Not required: the evaluator's
+bug (Q2 recorded it) or the cost (the demo delivers it).

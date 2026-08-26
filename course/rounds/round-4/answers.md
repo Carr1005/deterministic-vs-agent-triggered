@@ -10,5 +10,8 @@ committed as `round-4 tutor` when the gate passes.
 ## Q2 — why `macaron` can't be the signal
 (not yet answered)
 
-## Gate restatement
+## Gate restatement 1 — why control flow became probabilistic
+(not yet answered)
+
+## Gate restatement 2 — what counting buys
 (not yet answered)

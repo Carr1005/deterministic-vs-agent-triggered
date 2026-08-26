@@ -146,7 +146,7 @@ def run_n(n: int = 5, question: str = "I'm in Paris — suggest a quick sweet sn
         ok = signal in reply.lower()
         safe += ok
         print(f"  run {i}: {'SAFE' if ok else 'UNSAFE'}")
-    print(f"\n{safe}/{n} replies acknowledged the allergy")
+    print(f"\n{safe}/{n} replies contained {signal!r}")
 
 
 if __name__ == "__main__":
