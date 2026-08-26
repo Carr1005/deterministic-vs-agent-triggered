@@ -60,7 +60,7 @@ the design working, not failing.
 | 2 | Deterministic: *code invokes* — reads **and** writes, every turn | Exact SQL read + write by rule | Safe every time; survives process death; ~4× tokens **every** turn — fails on **cost, visibly** |
 | 3 | Agent-triggered: *model invokes*, via tools; semantic search matches by meaning | Preload out, two search tools in | Sometimes it checks memory, sometimes not — cheapest turn *and* most dangerous reply |
 | 4 | One passing run proves nothing; count | The five-run harness | `--x5` → typically 2–4 of 5 SAFE. Fails on **reliability, silently** |
-| 5 | The per-operation decision; the bootstrap argument | Pin **one** read (a two-line diff) | `--x5` → 5/5, at a cost between the extremes |
+| 5 | The per-operation decision; the bootstrap argument | Pin **one** read (a two-line diff) | `--x5` → 5/5, and it costs *more* than Round 2 — the cheap turn was only ever cheap by skipping the check |
 
 Round 5's questions are a judgment drill — six real operations (Q5.1–Q5.6), and you
 commit to a classification *and a written reason* before each verdict is revealed. Two

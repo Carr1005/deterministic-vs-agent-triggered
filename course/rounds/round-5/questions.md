@@ -26,6 +26,10 @@ hold; probe the reason, never the verdict):
 
 ## The six operations — one at a time, verdict + reason first
 
+**Ask (the same shape for all six — name the operation, read its line, then):**
+"`<operation>` — <what it does>. Deterministic or agent-triggered, and why? One line for
+each, before I say anything."
+
 Scoring: verdict + reason before any response from you. Rungs probe the reason.
 Contested (Q5.5, Q5.6): any verdict with a coherent reason = full credit — **and the
 reveal must name the cost of the side they chose.** No reason = miss; probe once, then
@@ -59,6 +63,9 @@ model knows its own question."
 **Verdict (model answer):**
 **Q5.3 write_conversational_memory → deterministic.** The Round-2/3 argument: model-
 discretion writes rot silently.
+*Reveal:* "Deterministic — and you argued this one back in Round 2. A write the model
+decides to skip raises nothing: no error, no warning, no gap you can see. You find out at
+recall time, when the thing you needed was simply never stored."
 
 **Q5.4 — `write_tool_log`** — record every tool invocation the model makes.
 
@@ -66,6 +73,11 @@ discretion writes rot silently.
 **Q5.4 write_tool_log → deterministic.** An audit trail that depends on the audited
 party's judgment is not an audit trail. (If this one lands well, point at the optional
 stretch in build.md — after the demo.)
+*Reveal:* "Deterministic — an audit trail that depends on the audited party's judgment is
+not an audit trail. And notice what this one is *not*: nobody's safety depends on the log.
+It gets pinned because of who reads it later, not because this turn needs it. Two
+operations, same verdict, different reasons — which is the whole point of deciding one at
+a time."
 
 **Q5.5 — `write_entity`** *(contested)* — extract entities/facts from the conversation
 and store them.
@@ -85,11 +97,6 @@ into long-term memory.
 - Extra probe if they hesitate: "Separate two things: who *invokes* the summary, and
   who *writes* it. Must they be the same party?"
 
-Verdicts, acceptance, and reveal text (including the cost each contested side pays):
-the **Verdict** blocks above.
-
----
-
 **Verdict (model answer):**
 **Q5.6 summarize_and_store → contested, with a twist.** The strongest answer separates
 **who invokes** (code — every N turns / session end: deterministic trigger) from **who
@@ -101,6 +108,8 @@ on a schedule."
 *Reveal for agent-triggered:* "Defensible — your cost is that a session which needed
 summarizing may never get it, and nothing tells you."
 *Either way, land the split:* invocation can be code even when the work is the model's.
+
+---
 
 ## Gate — two restatements, own words
 
