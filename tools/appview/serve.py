@@ -55,8 +55,8 @@ SAFE = re.compile(r"^(\d+)/5 replies contained", re.M)
 
 
 # ---------------------------------------------------------------- the diagram --------
-# One fixed drawing of the FINAL (round-5) app; what the learner's build has reached
-# only changes each element's CSS class. Staging facts are this table, checked against
+# The diagram shows ONLY what the app does right now — nothing dimmed, nothing promised.
+# Elements appear when their round's `round-N build` commit exists, checked against
 # course/rounds/round-N/reference/snackbot.py:
 #   R1 adds the meter; R2 adds read_user_facts()/save_turn() called every turn; R3 adds
 #   embeddings + the two search tools and REMOVES the every-turn read call (the function
@@ -76,35 +76,10 @@ STAGED = {
     "e_embed": (3, None, None),
 }
 
-# What each staged edge's label says in each state. Boxes just get "arrives in Round N".
-EDGE_LABEL = {
-    "e_read": {
-        "future":   "deterministic read — arrives in Round 2",
-        "active":   "deterministic read — code calls it, every turn",
-        "removed":  "every-turn read removed in Round 3 — the model decides now",
-        "restored": "pinned in Round 5 — the ONE deterministic read",
-    },
-    "e_write": {
-        "future": "deterministic writes — arrive in Round 2",
-        "active": "deterministic writes — every turn, no judgment",
-    },
-    "e_tools": {
-        "future": "agent-triggered — arrives in Round 3",
-        "active": "agent-triggered — the model decides, via tools",
-    },
-    "e_embed": {
-        "future": "arrives in Round 3",
-        "active": "embed the query, cosine, top 3",
-    },
-    "e_meter": {
-        "future": "arrives in Round 1",
-        "active": "every turn",
-    },
-}
-
 
 def state(stage, arrives, removed=None, restored=None):
-    """One of future / active / removed / restored, for an element of the diagram."""
+    """One of future / active / removed / restored, for an element of the diagram.
+    future and removed elements are simply not drawn — the page shows current status."""
     if stage < arrives:
         return "future"
     if restored and stage >= restored:
@@ -114,8 +89,9 @@ def state(stage, arrives, removed=None, restored=None):
     return "active"
 
 
-def _st(stage, key):
-    return state(stage, *STAGED[key])
+def _on(stage, key):
+    """Is this element part of the app right now?"""
+    return state(stage, *STAGED[key]) in ("active", "restored")
 
 
 def _box(x, y, w, h, lines, cls):
@@ -135,78 +111,80 @@ def _label(x, y, text, cls):
             f'<text x="{x:.0f}" y="{y + 11.5}" text-anchor="middle">{html.escape(text)}</text></g>')
 
 
-def _arrives(x, y, key):
-    return _label(x, y, f"arrives in Round {STAGED[key][0]}", "future")
-
-
 def diagram_svg(stage, db_exists):
-    s = {k: _st(stage, k) for k in STAGED}
+    on = {k: _on(stage, k) for k in STAGED}
+    pinned = state(stage, *STAGED["e_read"]) == "restored"
     parts = ['<svg viewBox="0 0 920 500" role="img" '
-             'aria-label="SnackBot architecture, staged by round">']
+             'aria-label="What the SnackBot app does right now">']
 
     # lane headers
     for x, name in ((95, "your terminal"), (350, "src/snackbot.py"),
                     (620, "OpenAI"), (830, "memory.db")):
         parts.append(f'<text class="lane" x="{x}" y="38" text-anchor="middle">{name}</text>')
 
-    # always-present skeleton: terminal, snackbot container, chat model, db + tables
+    # always present: terminal, run_turn container, chat model, the shipped database
     parts.append(_box(20, 200, 150, 120, ["you → …", "[tool] …",
                                           "[meter] …", "bot ← …"], "active term"))
     parts.append(f'<g class="node active frame"><rect x="230" y="70" width="240" height="380" rx="4"/>'
                  f'<text x="350" y="92" text-anchor="middle">run_turn()</text></g>')
-    parts.append(_box(540, 90, 160, 56, ["chat completions", "gpt-5-mini"], "active"))
+    parts.append(_box(540, 70, 160, 56, ["chat completions", "gpt-5-mini"], "active"))
     parts.append(f'<g class="node active frame"><rect x="760" y="90" width="140" height="340" rx="4"/>'
                  f'<text x="830" y="112" text-anchor="middle">3 tables</text></g>')
     parts.append(_box(770, 130, 120, 64, ["CONVERSATIONAL_", "MEMORY", "turns, per thread"], "active tbl"))
-    parts.append(_box(770, 230, 120, 56, ["CONVERSATION_", "VECTORS", "seed-only"], "active tbl"))
-    parts.append(_box(770, 320, 120, 56, ["SEMANTIC_", "MEMORY", "seed-only"], "active tbl"))
-
-    # staged boxes inside the snackbot lane
-    parts.append(_box(245, 105, 210, 30, ["--x5 · run_n(): 5 runs, count SAFE"], s["x5"]))
-    if s["x5"] == "future":
-        parts.append(_arrives(350, 137, "x5"))
-    parts.append(_box(245, 160, 210, 52, ["read_user_facts()", "save_turn()"], s["detfns"]))
-    if s["detfns"] == "future":
-        parts.append(_arrives(350, 214, "detfns"))
-    parts.append(_box(245, 235, 210, 52, ["search_memory()", "search_knowledge_base()"], s["tools"]))
-    if s["tools"] == "future":
-        parts.append(_arrives(350, 289, "tools"))
-    parts.append(_box(245, 380, 210, 48, ["meter.py", "prints the [meter] line"], s["meter"]))
-    parts.append(_box(540, 380, 160, 48, ["embeddings API", "text-embedding-3-small"], s["embed"]))
-    if s["embed"] == "future":
-        parts.append(_arrives(620, 430, "embed"))
-
-    # edges + their labels (label text switches with the state — that IS the lesson)
+    parts.append(_box(770, 230, 120, 56, ["CONVERSATION_", "VECTORS", "embedded turns"], "active tbl"))
+    parts.append(_box(770, 320, 120, 56, ["SEMANTIC_", "MEMORY", "pastry facts"], "active tbl"))
     parts.append(_edge(170, 245, 230, 245, "active"))
-    parts.append(_edge(470, 118, 540, 118, "active"))
-    parts.append(_label(505, 96, "1 call per loop turn", "active"))
-    parts.append(_edge(350, 300, 350, 378, s["e_meter"]))
-    parts.append(_label(350, 332, EDGE_LABEL["e_meter"].get(s["e_meter"], ""), s["e_meter"]))
-    parts.append(_edge(455, 172, 770, 158, s["e_read"]))
-    parts.append(_label(608, 130, EDGE_LABEL["e_read"][s["e_read"]], s["e_read"]))
-    parts.append(_edge(455, 196, 770, 182, s["e_write"]))
-    parts.append(_label(608, 200, EDGE_LABEL["e_write"].get(s["e_write"], ""), s["e_write"]))
-    parts.append(_edge(455, 250, 770, 256, s["e_tools"]))
-    parts.append(_edge(455, 262, 770, 344, s["e_tools"]))
-    parts.append(_label(608, 292, EDGE_LABEL["e_tools"].get(s["e_tools"], ""), s["e_tools"]))
-    parts.append(_edge(430, 287, 560, 380, s["e_embed"]))
-    parts.append(_label(480, 340, EDGE_LABEL["e_embed"].get(s["e_embed"], ""), s["e_embed"]))
+    parts.append(_edge(470, 98, 540, 98, "active"))
+
+    # everything below exists only once its round's build commit does
+    if on["x5"]:
+        parts.append(_box(245, 105, 210, 30, ["--x5 · run_n(): 5 runs, count SAFE"], "active"))
+    if on["detfns"]:
+        names = (["read_user_facts()", "save_turn()"] if on["e_read"]
+                 else ["save_turn()"])
+        parts.append(_box(245, 160, 210, 52, names, "active"))
+    if on["tools"]:
+        parts.append(_box(245, 235, 210, 52, ["search_memory()",
+                                              "search_knowledge_base()"], "active"))
+    if on["meter"]:
+        parts.append(_box(245, 380, 210, 48, ["meter.py", "prints the [meter] line"], "active"))
+        parts.append(_edge(350, 300, 350, 378, "active"))
+        parts.append(_label(350, 330, "every turn", "active"))
+    if on["embed"]:
+        parts.append(_box(540, 380, 160, 48, ["embeddings API",
+                                              "text-embedding-3-small"], "active"))
+    if on["e_read"]:
+        cls = "restored" if pinned else "active"
+        text = ("pinned — the ONE deterministic read" if pinned
+                else "deterministic read — every turn")
+        parts.append(_edge(455, 172, 770, 158, cls))
+        parts.append(_label(608, 138, text, cls))
+    if on["e_write"]:
+        parts.append(_edge(455, 196, 770, 182, "active"))
+        parts.append(_label(608, 202, "deterministic writes — every turn", "active"))
+    if on["e_tools"]:
+        parts.append(_edge(455, 250, 770, 256, "active"))
+        parts.append(_edge(455, 262, 770, 344, "active"))
+        parts.append(_label(608, 292, "agent-triggered — the model decides", "active"))
+    if on["e_embed"]:
+        parts.append(_edge(430, 287, 560, 380, "active"))
+        parts.append(_label(478, 344, "embed the query, cosine, top 3", "active"))
 
     # the round-1 lesson, on the diagram itself: a full database nobody reads
     if stage < 2:
         text = ("full, but nothing reads it yet" if db_exists
                 else "created at setup (bash setup/bootstrap.sh)")
-        parts.append(_label(830, 436, text, "removed"))
+        parts.append(_label(830, 442, text, "removed"))
 
     parts.append("</svg>")
 
     legend = (
         '<details class="src"><summary>how to read this</summary>'
-        '<p class="note">Solid: in your app now. Faint and dashed: not built yet — the '
-        'chip names the round that adds it. Struck red: was called every turn, and that '
-        'call has been removed — the model decides now. Teal with a pin: restored and '
-        'pinned, the one read that runs no matter what. The drawing is always the '
-        'finished round-5 app; only the styling follows your build commits.</p></details>')
+        '<p class="note">Only what your app does right now is drawn — the diagram gains '
+        'a piece each time a round&rsquo;s build is committed. The database ships full '
+        'from the start; whether anything reads it is what the course is about. In '
+        'Round 3 the every-turn read disappears from here (the model decides instead); '
+        'in Round 5 it returns, pinned, in teal.</p></details>')
     return f'<section class="panel">{"".join(parts)}{legend}</section>'
 
 
@@ -465,10 +443,6 @@ svg .term text{text-anchor:middle}
 svg .edge{stroke:var(--dim);stroke-width:1.4}
 svg .chip rect{fill:var(--surface);stroke:var(--rule)}
 svg .chip text{font-size:9.5px;fill:var(--dim)}
-svg .future{opacity:.32}
-svg .future rect,svg line.future{stroke-dasharray:4 3}
-svg .chip.future{opacity:.75}
-svg line.removed{stroke:var(--rust);stroke-dasharray:5 4}
 svg .chip.removed rect{stroke:var(--rust)}
 svg .chip.removed text{fill:var(--rust)}
 svg line.restored{stroke:var(--petrol);stroke-width:2.2}
