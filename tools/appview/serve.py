@@ -130,9 +130,9 @@ def diagram_svg(stage, db_exists):
     parts.append(_box(540, 70, 160, 56, ["chat completions", "gpt-5-mini"], "active"))
     parts.append(f'<g class="node active frame"><rect x="760" y="90" width="140" height="340" rx="4"/>'
                  f'<text x="830" y="112" text-anchor="middle">3 tables</text></g>')
-    parts.append(_box(770, 130, 120, 64, ["CONVERSATIONAL_", "MEMORY", "turns, per thread"], "active tbl"))
-    parts.append(_box(770, 230, 120, 56, ["CONVERSATION_", "VECTORS", "embedded turns"], "active tbl"))
-    parts.append(_box(770, 320, 120, 56, ["SEMANTIC_", "MEMORY", "pastry facts"], "active tbl"))
+    parts.append(_box(770, 130, 120, 64, ["CONVERSATIONAL_", "MEMORY", "raw turns, per thread"], "active tbl"))
+    parts.append(_box(770, 230, 120, 56, ["CONVERSATION_", "VECTORS", "the turns, embedded"], "active tbl"))
+    parts.append(_box(770, 320, 120, 56, ["SEMANTIC_", "MEMORY", "the knowledge base"], "active tbl"))
     parts.append(_edge(170, 245, 230, 245, "active"))
     parts.append(_edge(470, 98, 540, 98, "active"))
 
@@ -218,9 +218,9 @@ def db_tables_html():
         # Embeddings are ~28 KB of JSON each; never fetch them whole. The preview is
         # enough to make "it's a list of floats" tangible.
         for table, what in (("CONVERSATION_VECTORS",
-                             "the same turns, embedded — search_memory() searches here"),
+                             "the turns above again, embedded for search — search_memory() reads here"),
                             ("SEMANTIC_MEMORY",
-                             "the pastry facts — search_knowledge_base() searches here")):
+                             "the knowledge base: pastry facts — search_knowledge_base() reads here")):
             rows = conn.execute(f"SELECT id, content, substr(embedding, 1, 48), "
                                 f"length(embedding) FROM {table} ORDER BY id").fetchall()
             body = "".join(
