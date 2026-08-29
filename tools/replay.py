@@ -366,6 +366,8 @@ def main():
     print(f"  resume  {resume_line(dest)}")
     print(f"\n  cd {dest} && claude          # play the round with a real tutor")
     print(f"  bash tools/viewer/serve.sh --ensure --port {a.port}   # (from there)")
+    # --stop defaults to 4000, so a sandbox server needs its port naming both times.
+    print(f"  bash tools/viewer/serve.sh --stop --port {a.port}     # when you are done")
     print("\nNOTE  This is a synthesized state for development, not a played course —")
     print("      no model was called and the answers are the course's own prose.")
 
