@@ -7,7 +7,7 @@ __pycache__/
 # `git status --porcelain` on every turn, which IS the mid-TUTOR resume signal.
 memory.db
 
-# Appview run log — appended by tools/appview/run.py when the tutor runs the app
+# Viewer run log — appended by tools/viewer/run.py when the tutor runs the app
 # for the learner. State, not courseware; same porcelain rule as memory.db.
 .snackbot-runs.jsonl
 

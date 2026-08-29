@@ -108,6 +108,23 @@ an open own-words summary belongs — nothing was just revealed here. Then:
 Never paste the **Model answer / Accept if / Reveal / Verdict** blocks unprompted —
 they are your answer key, embedded beside each question.
 
+**The viewer — start it at the scene-set, keep it fed all course.** Run
+`bash tools/viewer/serve.sh --ensure` (idempotent; starts it only if it isn't already up,
+and prints the URL) at the Round 1 scene-set and again whenever you re-anchor. It serves
+two tabs on one port: `http://localhost:4000/guide`, a guide to the app as it stands —
+how it works, what the memory holds, and every run you made on the learner's behalf — and
+`http://localhost:4000/diffs`, every round's spec and code change (that one is for the
+diff dialogue; see EXPAND). Whenever the learner asks **you** to run the app or a memory
+script, run it through the wrapper — `.venv/bin/python tools/viewer/run.py
+src/snackbot.py --x5`, and the same for `setup/show_memory.py` or
+`setup/reset_memory.py` — the terminal output is identical and the exit code is
+preserved; the wrapper only also puts the run on the guide page. The phase files' commands
+are unchanged: runs the learner makes in their own terminal are theirs alone and are never
+captured, and if the wrapper ever errors, fall back to the bare command and keep going —
+this is a window, never a gate. If the port was busy it will report a different one; use
+whatever it printed. When the learner stops for the day, mention
+`bash tools/viewer/serve.sh --stop` (it also expires on its own after an idle hour).
+
 ## SPEC mode
 
 - Draft each clause **from the learner's recorded answer** in `answers.md`, using the
@@ -140,28 +157,11 @@ counter-questions, no "what do you think?" — this is expansion, not assessment
 it would punish curiosity. Tag these turns `[RN · EXPAND]`. When the learner says done,
 return to the protocol and the previous mode's rules resume.
 
-**The diff viewer — offer it at every diff dialogue, spec and code alike.** Run
-`bash tools/diffview/serve.sh --ensure` (idempotent; starts it only if it isn't already
-up, and prints the URL), then give the learner the deep link for what is on screen —
-`http://localhost:4000/#r3-build`, `#r3-spec`, and so on. It shows **every** round's spec
-and code change, so a learner in Round 4 can still open Round 2. Give it **in addition to**
-showing the diff yourself — it is a second pair of eyes on the same thing, never a
-substitute for walking the diff with them. If the port was busy it will report a different
-one; use whatever it printed. When the learner stops for the day, mention
-`bash tools/diffview/serve.sh --stop` (it also expires on its own after an idle hour).
-
-**The app status page — hand it out at the scene-set, keep it fed all course.** Run
-`bash tools/appview/serve.sh --ensure` (idempotent; prints the URL) at the Round 1
-scene-set and again whenever you re-anchor. It shows the app's architecture filling in
-round by round, the memory tables as they stand right now, and a log of every run you
-make on the learner's behalf. Whenever the learner asks **you** to run the app or a
-memory script, run it through the wrapper — `.venv/bin/python tools/appview/run.py
-src/snackbot.py --x5`, and the same for `setup/show_memory.py` or
-`setup/reset_memory.py` — the terminal output is identical and the exit code is
-preserved; the wrapper only also puts the run on the page. The phase files' commands are
-unchanged: runs the learner makes in their own terminal are theirs alone and are never
-captured, and if the wrapper ever errors, fall back to the bare command and keep going —
-this page is a window, never a gate. If the port was busy it will report a different
-one; use whatever it printed. When the learner stops for
-the day, mention `bash tools/appview/serve.sh --stop` (it also expires on its own after
-an idle hour).
+**The diff page — offer it at every diff dialogue, spec and code alike.** The viewer is
+already running from the scene-set (see TUTOR mode); give the learner the deep link for
+what is on screen — `http://localhost:4000/diffs#r3-build`, `#r3-spec`, and so on. It
+shows **every** round's spec and code change, so a learner in Round 4 can still open
+Round 2. Give it **in addition to** showing the diff yourself — it is a second pair of
+eyes on the same thing, never a substitute for walking the diff with them. If it has
+expired, `bash tools/viewer/serve.sh --ensure` brings it back; the command is idempotent
+and costs nothing to repeat, and it prints the URL it actually used.

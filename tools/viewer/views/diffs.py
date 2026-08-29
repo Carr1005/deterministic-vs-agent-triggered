@@ -193,6 +193,8 @@ JS = """
 <script>
 // Remember the chosen view, so it survives the reload after every commit.
 (function () {
+  // Still the pre-merge key on purpose: renaming it would silently reset the toggle for
+  // every learner who had already chosen side-by-side.
   var k = "snackbot-diffview-view";
   var uni = document.getElementById("v-uni"), spl = document.getElementById("v-split");
   if (localStorage.getItem(k) === "split") spl.checked = true;

@@ -12,8 +12,8 @@ before any memory design.
 already in it — the almond allergy is *already stored*. Yet `src/snackbot.py` today is a
 bare LLM call. This round we don't fix that; we name the problem and build the
 instrument.
-First run `bash tools/appview/serve.sh --ensure`, then add one line: you can always
-check localhost:5050 for the live status of the working app — if the script printed a
+First run `bash tools/viewer/serve.sh --ensure`, then add one line: you can always
+check localhost:4000/guide for a guide to the app as it stands — if the script printed a
 different URL, give that one.
 
 ---
