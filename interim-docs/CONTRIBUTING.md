@@ -94,6 +94,36 @@ git clone -b main https://github.com/Carr1005/deterministic-vs-agent-triggered.g
 then branch, commit, and open a pull request. If you can't push, fork it first — that is
 expected, and it is why testers get read access rather than write.
 
+## Working on one round: `tools/replay.py`
+
+Developing Round 4 — its questions, its build brief, how it looks on the viewer — used to
+mean playing Rounds 1-3 by hand first, with real API calls, every time. Instead:
+
+```bash
+python3 tools/replay.py --round 4          # tutor resumes at Round 4, first question
+python3 tools/replay.py --through "round-4 spec"   # any phase boundary, precisely
+python3 tools/replay.py --round 4 --mid-tutor      # …answers.md left uncommitted
+python3 tools/replay.py --round 4 --serve          # …and serve the viewer there
+```
+
+It clones the repo to a throwaway directory under `$TMPDIR`, replays the course into it
+one protocol commit at a time, seeds `memory.db` from the shipped fixture, and prints the
+path plus the resume position. `cd` there and launch your agent and the tutor picks up at
+the round you are working on. Your **uncommitted** edits are overlaid into the sandbox
+before the replay, so a clause template you are still editing is the one that gets staged.
+
+It writes nothing here: every git write goes through `git -C <sandbox>`, and a target
+inside this repo, or one with an `origin` remote, is refused outright. That guard is the
+second convention below, mechanised — a `round-N` commit in real history would make the
+tutor resume mid-course.
+
+**It does not produce a played course.** No model is called, and the answers are the
+course's own model-answer prose rather than a learner's words, so `answers.md` reads in
+the wrong voice by construction. Every commit it makes carries
+`Synthesized by tools/replay.py — not a played round.` in its body, and the subjects stay
+protocol-exact only because the resume table and the viewer match on them. The five-round
+trial in `to-address.md` is still outstanding and this tool cannot close it.
+
 ## Two rules that are convention, not enforcement
 
 GitHub branch protection needs a Pro plan or a public repo — this one is private on a free
