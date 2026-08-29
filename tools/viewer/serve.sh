@@ -1,31 +1,36 @@
 #!/usr/bin/env bash
-# serve.sh — start, reuse, or stop the local app status page.
+# serve.sh — start, reuse, or stop the local course viewer (two tabs on one port).
 #
-# The tutor runs `--ensure` at the Round 1 scene-set and hands the learner a link.
-# Because the tutor starts it rather than the learner, this script has to guarantee the
-# process never becomes a nuisance:
+# The tutor runs `--ensure` at the Round 1 scene-set and at each diff dialogue, and hands
+# the learner a link. Because the tutor starts it rather than the learner, this script has
+# to guarantee the process never becomes a nuisance:
 #
 #   --ensure   idempotent. If OUR server already answers, reuse it and start nothing.
 #              Otherwise start one in the background and wait until it answers.
-#   --stop     find it by port and kill it. No pid file is written; nothing in this
-#              repo is ever written to, because `git status --porcelain` is the tutor's
-#              mid-round resume signal (see course/PROTOCOL.md).
+#   --stop     find it by health token and kill it. No pid file is written; nothing in
+#              this repo is ever written to, because `git status --porcelain` is the
+#              tutor's mid-round resume signal (see course/PROTOCOL.md).
 #
 # The server also shuts itself down after 60 idle minutes, so a forgotten one expires.
 # Background output goes to $TMPDIR, deliberately outside the repo.
 set -u
 cd "$(dirname "$0")/../.."
 
-# 5050, not 5000: macOS AirPlay Receiver permanently holds 5000, and the briefing
-# names one URL for every learner — it should be true on every machine.
-PORT=5050
+PORT=4000
 IDLE=60
 ACTION=""
-LOG="${TMPDIR:-/tmp}/snackbot-appview.log"
-TOKEN="snackbot-appview-ok"
+LOG="${TMPDIR:-/tmp}/snackbot-viewer.log"
+TOKEN="snackbot-viewer-ok"
+
+# Servers from before the two viewers were merged. They answer on ports we now want, with
+# tokens we no longer mint, so without this list `--ensure` would mistake our own old
+# process for a stranger, step aside to 4001, and leave :4000 serving the old tab-less
+# page at the URL everyone already has. Deletable once a release has shipped.
+LEGACY_TOKENS="snackbot-diffview-ok snackbot-appview-ok"
+LEGACY_PORTS="4000 4001 4002 4003 4004 4005 5050 5051 5052 5053 5054 5055 5000"
 
 usage() {
-  echo "usage: bash tools/appview/serve.sh [--ensure|--stop|--foreground] [--port N] [--idle N]" >&2
+  echo "usage: bash tools/viewer/serve.sh [--ensure|--stop|--foreground] [--port N] [--idle N]" >&2
   exit 2
 }
 
@@ -47,11 +52,10 @@ if   [ -x .venv/bin/python ];         then PY=".venv/bin/python"
 elif [ -x .venv/Scripts/python.exe ]; then PY=".venv/Scripts/python.exe"
 else PY="$(command -v python3 || command -v python)"; fi
 
-# Is OUR server on this port? A magic token distinguishes it from anything else
-# squatting — including tools/diffview, whose token differs on purpose.
-ours() {
-  local body
-  body="$("$PY" - "$1" <<'PYEOF' 2>/dev/null
+# Whatever answers /healthz on this port, or "" — a magic token distinguishes our server
+# from anything else squatting.
+probe() {
+  "$PY" - "$1" <<'PYEOF' 2>/dev/null
 import sys, urllib.request
 try:
     with urllib.request.urlopen(f"http://127.0.0.1:{sys.argv[1]}/healthz", timeout=0.5) as r:
@@ -59,14 +63,34 @@ try:
 except Exception:
     pass
 PYEOF
-)"
-  [ "$body" = "$TOKEN" ]
 }
 
+ours()   { [ "$(probe "$1")" = "$TOKEN" ]; }
+
+legacy() {
+  local body; body="$(probe "$1")"
+  [ -n "$body" ] || return 1
+  for t in $LEGACY_TOKENS; do [ "$body" = "$t" ] && return 0; done
+  return 1
+}
+
+kill_port() {
+  local pids; pids="$(lsof -ti "tcp:$1" 2>/dev/null || true)"
+  [ -n "$pids" ] || return 1
+  echo "$pids" | while read -r pid; do kill "$pid" 2>/dev/null; done
+  return 0
+}
+
+# SO_REUSEADDR matters here: http.server.HTTPServer sets allow_reuse_address, so the real
+# server can bind a port still holding TIME_WAIT entries from a just-killed predecessor.
+# Probing without it is stricter than the server itself, and would send --ensure walking
+# away from a port it could have had — which is exactly what happens right after we
+# replace a legacy server on this port.
 port_taken() {
   "$PY" - "$1" <<'PYEOF' 2>/dev/null
 import socket, sys
 s = socket.socket()
+s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 try:
     s.bind(("127.0.0.1", int(sys.argv[1]))); sys.exit(1)   # free
 except OSError:
@@ -82,34 +106,37 @@ case "$ACTION" in
       echo "FAIL  lsof not found; stop it from the terminal it is running in (Ctrl-C)."
       exit 1
     fi
-    # The server may have walked past a busy $PORT at start, so scan the same range
-    # it walks — and kill only a port that answers OUR token, never a stranger.
     stopped=0
-    p="$PORT"
-    while [ "$p" -le $((PORT + 5)) ]; do
-      if ours "$p"; then
-        pids="$(lsof -ti "tcp:$p" 2>/dev/null || true)"
-        if [ -n "$pids" ]; then
-          echo "$pids" | while read -r pid; do kill "$pid" 2>/dev/null; done
-          echo "PASS  stopped appview on port $p (pid: $(echo $pids | tr '\n' ' '))"
+    # Scan the range --ensure walks, plus where the pre-merge viewers used to live, and
+    # kill only a port that answers a token we minted — never a stranger.
+    for p in $(seq "$PORT" $((PORT + 5))) $LEGACY_PORTS; do
+      if ours "$p" || legacy "$p"; then
+        if kill_port "$p"; then
+          echo "PASS  stopped the viewer on port $p"
           stopped=1
         fi
       fi
-      p=$((p + 1))
     done
-    [ "$stopped" = 1 ] || echo "NOTE  no appview server found on ports $PORT-$((PORT + 5))."
+    [ "$stopped" = 1 ] || echo "NOTE  no viewer found on ports $PORT-$((PORT + 5))."
     ;;
 
   --foreground)
-    exec "$PY" tools/appview/serve.py --port "$PORT" --idle "$IDLE"
+    exec "$PY" tools/viewer/serve.py --port "$PORT" --idle "$IDLE"
     ;;
 
   --ensure)
     if ours "$PORT"; then
-      echo "PASS  already running: http://localhost:$PORT/"
+      echo "PASS  already running: http://localhost:$PORT/diffs"
       exit 0
     fi
-    # Port occupied by something that is not ours: step aside rather than fight it.
+    # An old pre-merge server of ours on this port: it is identified by a token we
+    # minted, so take the port back rather than stepping aside — stepping aside is only
+    # correct for a genuine stranger, and here it would leave a stale page on the URL
+    # the learner already has.
+    if legacy "$PORT" && command -v lsof >/dev/null 2>&1; then
+      kill_port "$PORT" && echo "NOTE  replaced an older SnackBot viewer on port $PORT."
+      sleep 0.5
+    fi
     start="$PORT"
     while port_taken "$PORT"; do
       echo "NOTE  port $PORT is in use by another process."
@@ -119,16 +146,17 @@ case "$ACTION" in
         exit 1
       fi
       if ours "$PORT"; then
-        echo "PASS  already running: http://localhost:$PORT/"
+        echo "PASS  already running: http://localhost:$PORT/diffs"
         exit 0
       fi
     done
-    nohup "$PY" tools/appview/serve.py --port "$PORT" --idle "$IDLE" \
+    nohup "$PY" tools/viewer/serve.py --port "$PORT" --idle "$IDLE" \
       >"$LOG" 2>&1 &
     for _ in 1 2 3 4 5 6 7 8 9 10; do
       sleep 0.3
       if ours "$PORT"; then
-        echo "PASS  appview on http://localhost:$PORT/  (stops itself after $IDLE idle min)"
+        echo "PASS  viewer on http://localhost:$PORT/diffs and http://localhost:$PORT/guide"
+        echo "      (stops itself after $IDLE idle min)"
         exit 0
       fi
     done

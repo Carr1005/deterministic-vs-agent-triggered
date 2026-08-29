@@ -1,54 +1,33 @@
 #!/usr/bin/env python3
-"""serve.py — a live page of the working app's status, on localhost:5000.
+"""guide.py — the /guide page: a guide to the app the learner is building.
 
-Why it exists: the diff viewer (tools/diffview) shows what each round *changed*; nothing
-shows the learner what the app *is* right now. This serves three things at a stable URL:
-the app's architecture as it fills in round by round, the memory tables as they stand,
-and a log of every run the tutor made on the learner's behalf — what it printed, what
-the meter counted (the log is written by tools/appview/run.py; this file only reads it).
+Three things the terminal cannot show them: how the app works right now (a diagram that
+gains a piece with each round's build commit), what its memory actually holds, and a log
+of every run the tutor made on their behalf — what it printed, what the meter counted.
 
-Three invariants this file must never break:
+Read-only over everything: git through `core.git`, `memory.db` through a `mode=ro` URI so
+this process can never create or mutate it, and the run log (written only by
+`tools/viewer/run.py`). Every page is built as a string, per request.
 
-  1. It writes NOTHING, anywhere. `git status --porcelain` is the tutor's mid-round
-     resume signal (course/PROTOCOL.md), so every page is built as a string, per
-     request. Git is only read (hermetically, same flags as tools/diffview/serve.py);
-     memory.db is opened read-only via a `mode=ro` URI, so this server can never
-     create, lock, or mutate it; the run log is only read.
-  2. It uses only the standard library, so setup/requirements.txt and setup/check.sh
-     stay untouched and nobody mid-course has to re-bootstrap.
-  3. It is a window, never a gate: nothing in the course consults this page or the run
-     log. Delete tools/appview entirely and the course runs identically.
+This page is expected to grow: a section per round, its own diagram per round, notes on
+what to expect when you run each script. `render()` owns the whole body precisely so that
+can happen here without touching the shell or the diffs page.
 """
-import argparse
 import hashlib
 import html
-import http.server
 import json
-import os
 import re
 import sqlite3
-import subprocess
-import sys
-import threading
-import time
-from pathlib import Path
 
-# run.py is the writer; its top half is the shared read-only source layer (repo root,
-# log path, db path, course stage, hermetic git). Imported so the two files can never
-# disagree about where things live. Import-safe: main-guarded, stdlib, no side effects.
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from run import REPO, RUN_LOG, TABLES, course_stage, db_path  # noqa: E402
+import core
 
-HEALTH_TOKEN = "snackbot-appview-ok"
-
-# Same titles as tools/diffview/serve.py, so the two pages speak one language.
-ROUND_TITLE = {
-    1: "The meter — instrument before you optimise",
-    2: "Deterministic memory — code invokes, every turn",
-    3: "Agent-triggered memory — the model invokes, via tools",
-    4: "Counting — one passing run proves nothing",
-    5: "The per-operation decision — pin exactly one read",
-}
+ID = "guide"
+LABEL = "Guide"
+TITLE = "A guide to what you've built"
+FOOTER = ("Read-only over the repo; the only file it reads back is its own git-ignored "
+          "run log (written by <code>tools/viewer/run.py</code>). Served from "
+          "<code>tools/viewer/views/guide.py</code>; writes nothing. Stop the viewer with "
+          "<code>bash tools/viewer/serve.sh --stop</code>.")
 
 METER = re.compile(r"\[meter\] in=(\d+) tok\s+out=(\d+) tok\s+cost=\$([0-9.]+)\s+latency=(\d+)ms")
 SAFE = re.compile(r"^(\d+)/5 replies contained", re.M)
@@ -193,13 +172,22 @@ def _card(text):
     return f'<p class="pending">{text}</p>'
 
 
+def _table_card(name, n, what, cols, body, open_=False):
+    head = "".join(f"<th>{c}</th>" for c in cols)
+    return (f'<details class="d"{" open" if open_ else ""}>'
+            f'<summary><span class="file">{name}</span>'
+            f'<span class="what">{what}</span><span class="n">{n} row(s)</span></summary>'
+            f'<div class="tblwrap"><table class="db"><thead><tr>{head}</tr></thead>'
+            f'<tbody>{body}</tbody></table></div></details>')
+
+
 def db_tables_html():
-    db = db_path()
+    db = core.db_path()
     if not db.exists():
         return _card("memory.db not created yet &mdash; <code>bash setup/bootstrap.sh</code> "
                      "creates and seeds it. Normal on a fresh clone.")
     try:
-        conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+        conn = core.db_connect()
     except sqlite3.Error as e:
         return _card(f"could not open memory.db read-only: {html.escape(str(e))}")
     try:
@@ -239,20 +227,11 @@ def db_tables_html():
         conn.close()
 
 
-def _table_card(name, n, what, cols, body, open_=False):
-    head = "".join(f"<th>{c}</th>" for c in cols)
-    return (f'<details class="d"{" open" if open_ else ""}>'
-            f'<summary><span class="file">{name}</span>'
-            f'<span class="what">{what}</span><span class="n">{n} row(s)</span></summary>'
-            f'<div class="tblwrap"><table class="db"><thead><tr>{head}</tr></thead>'
-            f'<tbody>{body}</tbody></table></div></details>')
-
-
 # ---------------------------------------------------------------- the run log --------
 def read_records():
     """Every parseable record, oldest first. A torn last line is skipped, not fatal."""
     try:
-        text = RUN_LOG.read_text(encoding="utf-8")
+        text = core.RUN_LOG.read_text(encoding="utf-8")
     except OSError:
         return []
     records = []
@@ -318,7 +297,7 @@ def run_log_html(current):
         rows = r.get("db_rows")
         delta = ""
         if isinstance(rows, dict) and isinstance(prev_rows, dict):
-            for t in TABLES:
+            for t in core.TABLES:
                 d = (rows.get(t) or 0) - (prev_rows.get(t) or 0)
                 if d:
                     delta += f'<span class="n"><b>Δ {t} {d:+d}</b></span>'
@@ -342,12 +321,6 @@ def run_log_html(current):
 
 
 # ---------------------------------------------------------------- change signal ------
-def _git_head():
-    r = subprocess.run(("git", "-C", str(REPO), "log", "-1", "--format=%H"),
-                       capture_output=True, text=True)
-    return r.stdout.strip() if r.returncode == 0 else ""
-
-
 def _stat_sig(p):
     try:
         st = p.stat()
@@ -356,69 +329,27 @@ def _stat_sig(p):
         return "absent"
 
 
-def state_hash():
-    """Cheap fingerprint of everything the page renders. No content is read."""
-    raw = "|".join((_git_head(), _stat_sig(RUN_LOG), _stat_sig(db_path())))
+def signature():
+    """Cheap fingerprint of everything this page renders. No content is read."""
+    raw = "|".join((core.git_head(), _stat_sig(core.RUN_LOG), _stat_sig(core.db_path())))
     return hashlib.sha1(raw.encode()).hexdigest()[:16]
 
 
-# ---------------------------------------------------------------- rendering ----------
-CSS = """
-*,*::before,*::after{box-sizing:border-box}
-:root{
-  --ink:#151a1c;--dim:#5c6a6d;--faint:#8a979a;--ground:#f4f6f5;--surface:#fff;
-  --sunken:#1b2225;--rule:#d8dedb;--petrol:#175c68;--brass:#8f6a15;
-  --moss:#3f6b2e;--rust:#9a3b2e;--term-fg:#c9d4d3;
-  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
-  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
-}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --ink:#e3e9e8;--dim:#96a4a6;--faint:#6d7b7e;--ground:#101517;--surface:#161d1f;
-  --sunken:#0a0e10;--rule:#26302f;--petrol:#6fb9c4;--brass:#d9a83a;
-  --moss:#8ec26f;--rust:#e59480;
-}}
-:root[data-theme="dark"]{
-  --ink:#e3e9e8;--dim:#96a4a6;--faint:#6d7b7e;--ground:#101517;--surface:#161d1f;
-  --sunken:#0a0e10;--rule:#26302f;--petrol:#6fb9c4;--brass:#d9a83a;
-  --moss:#8ec26f;--rust:#e59480;
-}
-body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);
-  font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
-.wrap{max-width:1000px;margin:0 auto;padding:0 24px 80px}
-header{padding:48px 0 24px;border-bottom:1px solid var(--rule)}
-h1{font-family:var(--mono);font-size:clamp(22px,3.4vw,30px);letter-spacing:-.02em;
-  font-weight:600;margin:0 0 10px}
+CSS = r"""
 h2{font-family:var(--mono);font-size:16px;font-weight:600;margin:44px 0 0;
   padding-bottom:8px;border-bottom:1px solid var(--rule)}
-.sub{color:var(--dim);max-width:66ch;margin:0;font-size:15px}
-.state{margin:14px 0 0;font-family:var(--mono);font-size:12.5px;color:var(--faint)}
 .stage{margin:20px 0 0;font-family:var(--mono);font-size:14px;color:var(--petrol);
   font-weight:600}
-p.note{margin:8px 14px;font-size:13px;color:var(--faint);max-width:70ch}
-.pending{color:var(--faint);font-size:14px;padding:14px 0 0;font-style:italic}
+
+/* overrides of the shared vocabulary: this page uses these in denser contexts than
+   the diffs page's header does */
+.state{margin:14px 0 0}
 details.src{margin:10px 0 0}
-details.src>summary{cursor:pointer;font-family:var(--mono);font-size:12.5px;
-  color:var(--faint);list-style:none;display:inline-flex;gap:8px;align-items:baseline}
-details.src>summary::-webkit-details-marker{display:none}
-details.src>summary::before{content:"\\25B8"}
-details.src[open]>summary::before{content:"\\25BE"}
-details.d{margin:16px 0 0;border:1px solid var(--rule);background:var(--surface)}
-details.d>summary{cursor:pointer;padding:11px 14px;display:flex;gap:12px;
-  align-items:baseline;font-family:var(--mono);font-size:13px;flex-wrap:wrap}
-details.d>summary::-webkit-details-marker{display:none}
-details.d>summary::before{content:"\\25B8";color:var(--faint);flex:none}
-details.d[open]>summary::before{content:"\\25BE"}
-.file{color:var(--ink);font-weight:600;flex:none}
-.what{color:var(--dim);font-family:var(--sans);font-size:13px;flex:1;min-width:180px}
+p.note{margin:8px 14px;max-width:70ch}
+
 .what code{font-family:var(--mono);color:var(--ink)}
-.n{font-variant-numeric:tabular-nums;flex:none;color:var(--faint)}
-.n b{color:var(--moss);font-weight:600}
 .ok{color:var(--moss);font-weight:600;flex:none}.bad{color:var(--rust);font-weight:600;flex:none}
 .dim{color:var(--faint)}
-pre{margin:0;background:var(--sunken);color:var(--term-fg);font-family:var(--mono);
-  font-size:12.5px;line-height:1.55;padding:14px;overflow-x:auto;white-space:pre;
-  border-top:1px solid var(--rule)}
-.add{color:var(--moss)}.del{color:var(--rust)}
 .meter{color:var(--brass)}.tool{color:var(--petrol)}.turn{font-weight:600}
 .tblwrap{overflow-x:auto;border-top:1px solid var(--rule)}
 table.db{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12.5px}
@@ -449,131 +380,28 @@ svg line.restored{stroke:var(--petrol);stroke-width:2.2}
 svg .chip.restored rect{stroke:var(--petrol)}
 svg .chip.restored text{fill:var(--petrol);font-weight:600}
 svg .node.restored rect{stroke:var(--petrol);stroke-width:2}
-footer{margin:56px 0 0;padding-top:20px;border-top:1px solid var(--rule);
-  font-size:13px;color:var(--faint)}
-footer code{font-family:var(--mono);font-size:12px}
 """
 
+JS = ""
 
-def page():
-    stage = course_stage()
+
+def render():
+    stage = core.course_stage()
     if stage:
-        stage_line = f"App at Round {stage} of 5 — {html.escape(ROUND_TITLE[stage])}"
+        stage_line = f"App at Round {stage} of 5 — {html.escape(core.ROUND_TITLE[stage])}"
     else:
         stage_line = ("App at the Round-0 baseline — a bare LLM call. "
                       "Each round's build fills this page in.")
-    hash_now = state_hash()
-    return f"""<!doctype html>
-<html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Your app, right now</title>
-<style>{CSS}</style></head><body>
-<div class="wrap">
-<header>
-  <h1>Your app, right now</h1>
-  <p class="sub">What SnackBot is at this point in the course: how it works, what its
-  memory holds, and every run your tutor made on your behalf. The page refreshes itself
-  after each commit and each recorded run.</p>
+    return f"""<header>
+  <h1>A guide to what you've built</h1>
+  <p class="sub">What you have built so far: how it works, what its memory holds, and
+  every run your tutor made on your behalf. The page refreshes itself after each commit
+  and each recorded run.</p>
   <p class="stage">{stage_line}</p>
 </header>
 <h2>How it works</h2>
-{diagram_svg(stage, db_path().exists())}
+{diagram_svg(stage, core.db_path().exists())}
 <h2>What the memory holds</h2>
 {db_tables_html()}
 <h2>Runs your tutor made for you</h2>
-{run_log_html(stage)}
-<footer>Read-only over the repo; the only file it reads back is its own git-ignored run
-log (written by <code>tools/appview/run.py</code>). Served from
-<code>tools/appview/serve.py</code>; writes nothing. Stop it with
-<code>bash tools/appview/serve.sh --stop</code>.</footer>
-</div>
-<script>
-// Reload only when something actually changed, so scroll and open cards survive.
-(function () {{
-  var cur = "{hash_now}";
-  setInterval(function () {{
-    fetch("/state").then(function (r) {{ return r.text(); }}).then(function (h) {{
-      if (h && h !== cur) location.reload();
-    }}).catch(function () {{}});   // server gone (idle reaper): go quiet, no errors
-  }}, 3000);
-}})();
-</script>
-</body></html>"""
-
-
-# ---------------------------------------------------------------- http ---------------
-class Handler(http.server.BaseHTTPRequestHandler):
-    server_version = "snackbot-appview"
-
-    def _send(self, code, body, ctype="text/html; charset=utf-8"):
-        raw = body.encode("utf-8")
-        self.send_response(code)
-        self.send_header("Content-Type", ctype)
-        self.send_header("Content-Length", str(len(raw)))
-        self.send_header("Cache-Control", "no-store")
-        self.end_headers()
-        self.wfile.write(raw)
-
-    def do_GET(self):
-        path = self.path.split("?")[0]
-        if path.startswith("/healthz"):
-            self.server.last_seen = time.time()
-            self._send(200, HEALTH_TOKEN, "text/plain; charset=utf-8")
-        elif path == "/state":
-            # Deliberately does NOT refresh last_seen: the page polls this every few
-            # seconds, and a forgotten open tab must not keep the server alive forever.
-            self._send(200, state_hash(), "text/plain; charset=utf-8")
-        elif path in ("/", "/index.html"):
-            self.server.last_seen = time.time()
-            self._send(200, page())
-        else:
-            self._send(404, "not found", "text/plain; charset=utf-8")
-
-    def log_message(self, fmt, *args):   # one tidy line, to stdout only
-        sys.stdout.write("  %s %s\n" % (self.address_string(), fmt % args))
-        sys.stdout.flush()
-
-
-def reaper(httpd, idle_minutes):
-    """Shut down after idle_minutes with no requests, so an orphan cannot outlive its use."""
-    if idle_minutes <= 0:
-        return
-    while True:
-        time.sleep(15)
-        if time.time() - httpd.last_seen > idle_minutes * 60:
-            print(f"NOTE  idle for {idle_minutes} min — shutting down.")
-            sys.stdout.flush()
-            httpd.shutdown()
-            return
-
-
-def main():
-    ap = argparse.ArgumentParser(add_help=True)
-    # 5050, not 5000: on macOS, AirPlay Receiver permanently holds 5000, and the
-    # briefing tells every learner one URL — it should be true on every machine.
-    ap.add_argument("--port", type=int, default=5050)
-    ap.add_argument("--idle", type=int, default=60,
-                    help="shut down after N idle minutes (0 disables)")
-    a = ap.parse_args()
-
-    if not (REPO / ".git").exists():
-        print(f"FAIL  {REPO} is not a git repository — no course to report on.")
-        return 1
-    try:
-        httpd = http.server.ThreadingHTTPServer(("127.0.0.1", a.port), Handler)
-    except OSError as e:
-        print(f"FAIL  cannot bind port {a.port}: {e}")
-        return 1
-    httpd.last_seen = time.time()
-    threading.Thread(target=reaper, args=(httpd, a.idle), daemon=True).start()
-    print(f"PASS  appview on http://localhost:{a.port}/  (idle timeout {a.idle} min)")
-    sys.stdout.flush()
-    try:
-        httpd.serve_forever()
-    except KeyboardInterrupt:
-        print("\nNOTE  stopped.")
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())
+{run_log_html(stage)}"""
