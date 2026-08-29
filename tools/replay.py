@@ -207,7 +207,7 @@ def guard(dest):
     return dest
 
 
-def build_sandbox(dest, fresh):
+def build_sandbox(dest, fresh, with_overlay=True):
     if dest.exists():
         if not fresh:
             raise SystemExit(f"FAIL  {dest} already exists. Pass --fresh to rebuild it.")
@@ -222,7 +222,9 @@ def build_sandbox(dest, fresh):
     git(dest, "config", "user.name", "replay")
     git(dest, "config", "user.email", "replay@localhost")
     git(dest, "remote", "remove", "origin", check=False)
-    overlay(dest)
+    if with_overlay:
+        overlay(dest)
+    check_unplayed_base(dest)
     seed = REPO / "setup/fixtures/memory-seed.db"
     if seed.exists():
         shutil.copy(seed, dest / "memory.db")
@@ -240,23 +242,48 @@ def overlay(dest):
     Committed immediately, under a subject that is deliberately NOT `round-N …`: an
     overlaid file left uncommitted would dirty the sandbox's working tree, and a dirty
     tree is precisely the mid-TUTOR resume signal this tool has to reproduce faithfully.
+
+    Deletions and renames in the working tree are skipped — only files that exist are
+    copied. Staging is by explicit path, never `git add -A`: this repo has been burned
+    once by an untracked file riding along into a commit (see .gitignore's note about
+    `interim-docs/trial-*/`), and a sandbox is no reason to repeat the habit.
     """
-    copied = 0
+    copied = []
     for ln in git(REPO, "status", "--porcelain").splitlines():
         path = ln[3:]
-        if path.endswith("/"):
+        if path.endswith("/") or " -> " in path:
             continue
         src = REPO / path
         if not src.is_file():
             continue
         (dest / path).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(src, dest / path)
-        copied += 1
+        copied.append(path)
     if copied:
-        git(dest, "add", "-A")
+        git(dest, "add", "--", *copied)
         git(dest, "commit", "--quiet", "-m",
             "replay: overlay the author's uncommitted working tree", "-m", TRAILER)
-        print(f"NOTE  overlaid {copied} uncommitted file(s) from the working tree")
+        print(f"NOTE  overlaid {len(copied)} uncommitted file(s) from the working tree")
+
+
+def check_unplayed_base(dest):
+    """Refuse to replay on top of artifacts the replay itself writes.
+
+    The spec and the demo log are *built up* round by round, so pre-existing content in
+    either — usually an overlaid file from a working tree mid-experiment — silently ends
+    up inside every replayed commit rather than announcing itself. `src/snackbot.py` is
+    overwritten wholesale each round, so it needs no check.
+    """
+    spec = (dest / "spec/spec.md").read_text(encoding="utf-8")
+    if re.search(r"^> S[1-5]\.", spec, re.M):
+        raise SystemExit(
+            "FAIL  spec/spec.md already holds clauses, so it is not the empty scaffold\n"
+            "      the replay builds on. Commit or revert your spec before replaying.")
+    log = (dest / "course/demo-log.md").read_text(encoding="utf-8")
+    if re.search(r"^## round [1-5] — \d{4}", log, re.M):
+        raise SystemExit(
+            "FAIL  course/demo-log.md already holds recorded rounds. Commit or revert it\n"
+            "      before replaying, or the replayed entries append to someone else's.")
 
 
 # ------------------------------------------------------------------ the replay -------
@@ -328,6 +355,8 @@ def main():
                    help="replay through this commit exactly, e.g. 'round-4 spec'")
     ap.add_argument("--dir", help="sandbox path (default: under $TMPDIR)")
     ap.add_argument("--fresh", action="store_true", help="rebuild if it already exists")
+    ap.add_argument("--no-overlay", action="store_true",
+                    help="replay from committed state only, ignoring your working tree")
     ap.add_argument("--mid-tutor", action="store_true",
                     help="leave the next round's answers.md modified but uncommitted")
     ap.add_argument("--serve", action="store_true",
@@ -348,7 +377,7 @@ def main():
 
     tmp = Path(os.environ.get("TMPDIR", "/tmp"))
     dest = guard(Path(a.dir) if a.dir else tmp / f"snackbot-replay-{label}")
-    build_sandbox(dest, a.fresh)
+    build_sandbox(dest, a.fresh, with_overlay=not a.no_overlay)
     made = replay(dest, upto_round, upto_phase) if upto_round else []
 
     if a.mid_tutor:
