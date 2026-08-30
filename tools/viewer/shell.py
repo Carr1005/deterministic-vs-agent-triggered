@@ -72,7 +72,8 @@ CSS = r"""
    Portrait first: one column, full-bleed padding, nothing that needs width to work.
    Wider viewports widen the measure in steps rather than stretching prose lines. */
 *,*::before,*::after{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} }
 body{margin:0;background:var(--base-150);color:var(--base-content);
   font-family:var(--sans);font-size:var(--fs-body);line-height:1.6;
   -webkit-font-smoothing:antialiased}
@@ -82,7 +83,8 @@ body{margin:0;background:var(--base-150);color:var(--base-content);
 /* A URL anchor scrolls its target to the very top, which is precisely where the sticky
    bars are — so every anchorable thing reserves their height. Without this, a deep link
    from the tutor lands with the card it named hidden behind the tabs. */
-.round,details.d{scroll-margin-top:calc(var(--bar-top-h) + var(--sub-h) + 14px)}
+.round,details.d,section[id]{
+  scroll-margin-top:calc(var(--bar-top-h) + var(--sub-h) + 14px)}
 
 /* The bars are full-bleed: they cancel the wrap's gutter so nothing scrolls through the
    margins beside a rounded pill. */
@@ -117,6 +119,11 @@ nav.tabs a .dot{display:inline-flex;align-items:center;justify-content:center;
 nav.tabs a.on .dot{background:var(--base-content);color:var(--base-100)}
 
 nav.subtabs{display:flex;flex-wrap:wrap;gap:6px;margin:18px 0 0}
+/* Inside a bar the row is centred by the bar, so its own top margin would push it off
+   centre — far enough that the pills crossed the bar's bottom border, and far enough
+   that the bar drew taller than --sub-h claims, which is what anchor offsets are
+   measured from. */
+.bar>nav.subtabs{margin:0;flex:1 1 auto}
 nav.subtabs a{display:inline-flex;align-items:center;gap:7px;padding:6px 14px;
   border-radius:999px;text-decoration:none;font-size:var(--fs-small);font-weight:600;
   color:var(--base-content-secondary);background:var(--base-200);
@@ -289,6 +296,50 @@ def _icon(view):
     return f'<svg viewBox="0 0 20 20" aria-hidden="true">{body}</svg>'
 
 
+# Which secondary tab is lit is a client-side fact: the server can only ever mark the
+# round the learner is IN, so once they navigate, a server-rendered mark is stuck on the
+# wrong one. Clicking marks immediately; an observer then keeps it honest while scrolling.
+# No-ops on a page without subtabs.
+NAV_JS = """
+<script>
+(function () {
+  var nav = document.querySelector("nav.subtabs");
+  if (!nav) return;
+  var links = Array.prototype.slice.call(nav.querySelectorAll("a"));
+  var ids = links.map(function (a) { return a.getAttribute("href").slice(1); });
+
+  function mark(id) {
+    links.forEach(function (a) {
+      a.classList.toggle("on", a.getAttribute("href") === "#" + id);
+    });
+  }
+  links.forEach(function (a) {
+    a.addEventListener("click", function () { mark(a.getAttribute("href").slice(1)); });
+  });
+  if (location.hash) mark(location.hash.slice(1));
+
+  if (!("IntersectionObserver" in window)) return;
+  // The trigger line sits just under the sticky bars, read from the same custom
+  // properties the bars and the anchor offsets use, so the three cannot drift apart.
+  var cs = getComputedStyle(document.documentElement);
+  var off = (parseInt(cs.getPropertyValue("--bar-top-h")) || 0) +
+            (parseInt(cs.getPropertyValue("--sub-h")) || 0) + 16;
+  var seen = {};
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { seen[e.target.id] = e.isIntersecting; });
+    for (var i = 0; i < ids.length; i++) {
+      if (seen[ids[i]]) { mark(ids[i]); return; }
+    }
+  }, { rootMargin: "-" + off + "px 0px -55% 0px" });
+  ids.forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) io.observe(el);
+  });
+})();
+</script>
+"""
+
+
 def tab_nav(active_id, views):
     """The top-level segmented control: one tinted track, the active segment filled."""
     links = []
@@ -346,5 +397,5 @@ def page(view, views, body, signature):
 {body}
 <footer>{view.FOOTER}</footer>
 </div>
-{poll}{view.JS}
+{poll}{NAV_JS}{view.JS}
 </body></html>"""
