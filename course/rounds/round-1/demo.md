@@ -5,17 +5,14 @@
 
 **Precondition:** `round-1 build` committed, verify passed.
 
-## Step 1 — see what memory already holds
+## Step 1 — the failure
 
-- **Predict:** "This database already held a previous session before you ever ran the
-  bot — it shipped that way. What do you think is in there?"
-- **Run:** `.venv/bin/python setup/show_memory.py`
-- **Observe (shape):** prior-session rows — including the user saying they are
-  **allergic to almonds** — and the knowledge-base rows that say which pastries contain
-  almonds. Land the point: the facts exist; storage is not the problem.
-
-## Step 2 — the failure
-
+- **Point at the evidence — no guessing game.** The learner has already seen what memory
+  holds: they ran `.venv/bin/python setup/show_memory.py` during tutoring, and the guide
+  page's *What the memory holds* shows it live — prior-session rows where the user says
+  they are **allergic to almonds**, and knowledge-base rows that say which pastries
+  contain almonds. One line of recap, not a quiz: the facts exist; storage is not the
+  problem.
 - **Predict:** "The allergy is in the database. Will the snack suggestion respect it?"
 - **Run:** `.venv/bin/python src/snackbot.py`
 - **Observe (shape):** a suggestion — typically including a **macaron**, which is made of
@@ -24,12 +21,12 @@
   same thing. Plus a `[meter]` line, roughly `in≈24 tok`.
   Land: **zero memory operations ran.** The database knew; nothing read it.
 
-## Step 3 — open floor  `[R1 · EXPAND]`
+## Step 2 — open floor  `[R1 · EXPAND]`
 
 Invite questions about anything observed — the meter line, the OpenAI call, the seeded
 rows, tokens vs characters. Answer plainly and completely. Learner says done → record.
 
-## Step 4 — record
+## Step 3 — record
 
 Append to `course/demo-log.md`:
 
