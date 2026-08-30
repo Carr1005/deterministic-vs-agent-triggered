@@ -54,20 +54,28 @@ def counts(diff):
 
 
 def diff_html(diff):
+    """One block per line, so a change reads as a full-width wash rather than as tinted
+    text — the encoding the side-by-side view already used, which is why the two views
+    now look alike. Coloured text was the inconsistency: a pale addition on a dark panel
+    is nearly white, so additions barely registered.
+
+    Joined with no separator on purpose. The blocks supply the line breaks; a newline
+    between them would be rendered too, and every line would carry double leading.
+    """
     out = []
     for ln in diff.split("\n"):
-        e = html.escape(ln)
         if ln.startswith("@@"):
-            out.append(f'<span class="hunk">{e}</span>')
+            cls = "dl hunk"
         elif ln.startswith("+") and not ln.startswith("+++ "):
-            out.append(f'<span class="add">{e}</span>')
+            cls = "dl ins"
         elif ln.startswith("-") and not ln.startswith("--- "):
-            out.append(f'<span class="del">{e}</span>')
+            cls = "dl rem"
         elif ln.startswith(("diff --git", "index ", "+++ ", "--- ")):
-            out.append(f'<span class="meta">{e}</span>')
+            cls = "dl meta"
         else:
-            out.append(e)
-    return "\n".join(out)
+            cls = "dl"
+        out.append(f'<span class="{cls}">{html.escape(ln)}</span>')
+    return "".join(out)
 
 
 HUNK = re.compile(r"^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@")
@@ -153,19 +161,29 @@ ul.matched{list-style:none;margin:10px 0 0;padding:0;display:grid;
   grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:3px 22px;
   font-family:var(--mono);font-size:var(--fs-small);
   color:var(--base-content-secondary);max-width:700px}
-ul.matched code{background:none;border:0;padding:0;color:var(--info);font-weight:650}
+ul.matched code{background:none;border:0;padding:0;color:var(--accent-ink);font-weight:650}
 
 /* A round is a titled band. The number carries the colour so the title can stay at
    full-contrast body ink. */
 .round{margin:40px 0 0}
 .rhead{display:flex;gap:12px;align-items:baseline;
   border-bottom:1px solid var(--base-300);padding-bottom:10px}
-.rnum{font-family:var(--mono);font-size:21px;font-weight:700;color:var(--info);
+.rnum{font-family:var(--mono);font-size:21px;font-weight:700;color:var(--accent);
   font-variant-numeric:tabular-nums;line-height:1}
 .rttl{font-size:15.5px;color:var(--base-content);font-weight:550}
 .n i{color:var(--danger-ink);font-style:normal;font-weight:650}
-.hunk{color:var(--warning)}
-.meta{color:var(--code-dim)}
+
+/* Unified view. Same washes, same hunk band and same legible body text as the
+   side-by-side table below, mixed from the same tokens — the two views render the same
+   diff, so they should not encode it differently. inline-block + min-width:100% makes a
+   wash span the full scroll width, not just the visible box. */
+pre .dl{display:inline-block;min-width:100%}
+pre .dl:empty::after{content:"\00a0"}
+pre .dl.ins{background:color-mix(in srgb, var(--success) 26%, transparent)}
+pre .dl.rem{background:color-mix(in srgb, var(--primary) 22%, transparent)}
+pre .dl.hunk{color:var(--warning);
+  background:color-mix(in srgb, var(--neutral-content) 7%, transparent)}
+pre .dl.meta{color:var(--code-dim)}
 
 /* View toggle — the `.subtabs` component from shell.py, one step quieter than the
    top-level tabs so two segmented controls never compete. The inputs must stay direct

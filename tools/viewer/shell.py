@@ -48,6 +48,10 @@ CSS = r"""
      bold marks that use them. Darkened toward the body ink they reach 5.3 and 6.3. */
   --success-ink:color-mix(in srgb, var(--success) 72%, var(--base-content));
   --danger-ink:color-mix(in srgb, var(--primary) 62%, var(--base-content));
+  /* accent is 3.9:1 on the page — fine for a large numeral, under AA for small text,
+     so anything set small uses the darkened ink instead. One blue family, two weights
+     of it, and no second hue. */
+  --accent-ink:color-mix(in srgb, var(--accent) 80%, var(--base-content));
 
   --mono:ui-monospace,"SF Mono",SFMono-Regular,"JetBrains Mono",Menlo,Consolas,monospace;
   --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
@@ -78,7 +82,7 @@ body{margin:0;background:var(--base-150);color:var(--base-content);
    secondary navigation drops straight into it. */
 nav.tabs{display:flex;gap:4px;margin:18px 0 0;padding:4px;
   background:var(--base-200);border:1px solid var(--base-300);border-radius:999px}
-@media (min-width:700px){ nav.tabs{display:inline-flex} }
+@media (min-width:1200px){ nav.tabs{display:inline-flex} }
 nav.tabs a{flex:1 1 0;display:inline-flex;align-items:center;justify-content:center;
   gap:9px;padding:10px 20px;border-radius:999px;text-decoration:none;
   font-size:var(--fs-label);font-weight:600;color:var(--base-content-secondary);
@@ -249,8 +253,8 @@ POLL_JS = """
 # external asset. A view may name its own with an ICON attribute; these are the
 # fallbacks, keyed by view id.
 ICONS = {
-    "diffs": '<path d="M8 3v12M3 8h12" stroke="currentColor" stroke-width="1.8" '
-             'stroke-linecap="round" fill="none"/>',
+    "diffs": '<path d="M3.5 6.5h6M6.5 3.5v6M10.5 14.5h6" stroke="currentColor" '
+             'stroke-width="1.8" stroke-linecap="round" fill="none"/>',
     "guide": '<path d="M3 4.5h5a2 2 0 0 1 2 2V15a1.6 1.6 0 0 0-1.6-1.6H3zM17 4.5h-5a2 2 '
              '0 0 0-2 2V15a1.6 1.6 0 0 1 1.6-1.6H17z" stroke="currentColor" '
              'stroke-width="1.5" fill="none" stroke-linejoin="round"/>',

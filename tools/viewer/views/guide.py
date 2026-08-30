@@ -373,7 +373,7 @@ def signature():
 CSS = r"""
 h2{font-family:var(--mono);font-size:17px;font-weight:650;margin:42px 0 0;
   padding-bottom:10px;border-bottom:1px solid var(--base-300);letter-spacing:-.01em}
-.stage{margin:18px 0 0;font-family:var(--mono);font-size:14px;color:var(--info);
+.stage{margin:18px 0 0;font-family:var(--mono);font-size:14px;color:var(--accent-ink);
   font-weight:650}
 
 /* overrides of the shared vocabulary: this page uses these in denser contexts than
@@ -404,7 +404,7 @@ table.db td{padding:8px 12px;vertical-align:top;border-bottom:1px solid var(--ha
 table.db tr:last-child td{border-bottom:0}
 td.num{white-space:nowrap;color:var(--base-content-secondary);
   font-variant-numeric:tabular-nums}
-td.role{white-space:nowrap;color:var(--info);font-weight:650}
+td.role{white-space:nowrap;color:var(--accent-ink);font-weight:650}
 td.vec{color:var(--base-content-secondary);max-width:340px;overflow-wrap:anywhere}
 
 /* The diagram panel. On a wide viewport it sits beside its own legend rather than
