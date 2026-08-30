@@ -45,6 +45,42 @@ You do **not** need to squash-merge. `main` is never what a learner sees, so a f
 full commit history is worth keeping — that is where the reasoning lives. (The diff viewer
 was squashed only because it landed before this split existed.)
 
+## Several branches at once
+
+**Never play the course on a branch you intend to merge.** Playing writes `round-N`
+commits and fills tracked courseware — `answers.md`, `spec/spec.md`, `demo-log.md`,
+`src/snackbot.py`. `setup/pristine.sh` then refuses that tree, which blocks
+`tools/release.sh` for *everyone*, and it surfaces at release time rather than while you
+are working. Test in a throwaway clone, or in a sandbox from
+`python3 tools/replay.py --round N`, which stages the round you are developing without
+playing the ones before it.
+
+Isolate each stream: a git worktree per area on one machine, or a plain clone each if
+you are several people. Viewers coexist — `--ensure` is scoped to its own checkout and
+walks to the next free port, and `--stop` names the checkout it stopped.
+
+Only a few files collide, because `course/rounds/round-N/` partitions naturally by round:
+`course/TUTORING.md`, `AGENTS.md`, `README.md`'s folder map, `.gitignore`. Land edits to
+those small and fast rather than holding them on a long-lived branch.
+
+**Push the moment you merge.** `release.sh` refuses while `main` is ahead of
+`origin/main`, so an unpushed merge blocks every other stream's release.
+
+**Release is a snapshot of `main`, not of your branch.** Whatever has landed ships on the
+next release, whoever triggers it — so merge only finished, verified work, and let one
+person release at chosen moments rather than after every merge. Two concurrent
+`release.sh` runs are two force-pushes, and the last one wins.
+
+Before merging, from the branch:
+
+```bash
+git log --format=%s origin/main..HEAD | grep -E '^round-[1-5] '   # must print nothing
+bash setup/pristine.sh                                            # must PASS
+```
+
+The first line is the one that matters: it catches a played branch before it reaches
+`main`, instead of at release time.
+
 ## Publishing
 
 `bash tools/release.sh`, from `main`, with a clean-ish worktree. It:
