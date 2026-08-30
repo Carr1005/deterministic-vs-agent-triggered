@@ -20,6 +20,7 @@ import re
 import sqlite3
 
 import core
+import shell
 
 ID = "guide"
 LABEL = "Guide"
@@ -236,6 +237,63 @@ def db_tables_html():
         conn.close()
 
 
+# ---------------------------------------------------------------- the spec ----------
+def _md(text):
+    """The inline markdown a clause actually uses, and nothing else.
+
+    Escaped FIRST, so nothing in the learner's own words can inject markup; the patterns
+    below only ever wrap text that is already inert. Code spans run before emphasis, so
+    an asterisk inside backticks stays literal.
+    """
+    out = html.escape(text)
+    out = re.sub(r"`([^`]+)`", r"<code>\1</code>", out)
+    out = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", out)
+    out = re.sub(r"\*([^*]+)\*", r"<em>\1</em>", out)
+    return out
+
+
+def spec_clauses(n):
+    """Round n's clauses from spec/spec.md, unwrapped into readable paragraphs.
+
+    Two things make this less trivial than it looks. A tutor may write a clause as a
+    blockquote (`> S1.1 — …`, the template's form) or bare (`S1.1 — …`, which is what a
+    real session produced), so both are accepted. And the file is hard-wrapped mid
+    sentence, so the lines of one clause are joined back into a paragraph — shown as
+    stored, they read as broken lines rather than prose.
+    """
+    path = core.REPO / "spec/spec.md"
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return []
+    section = re.search(rf"^## S{n} —.*?$(.*?)(?=^## S|\Z)", text, re.S | re.M)
+    if not section:
+        return []
+    clauses, cur = [], None
+    for ln in section.group(1).splitlines():
+        body = ln[2:] if ln.startswith("> ") else ln.lstrip(">").strip() if ln.startswith(">") else ln
+        if re.match(r"^\s*S[1-5]\.", body):
+            if cur:
+                clauses.append(" ".join(cur))
+            cur = [body.strip()]
+        elif cur is not None and body.strip():
+            cur.append(body.strip())
+        elif cur is not None:
+            clauses.append(" ".join(cur))
+            cur = None
+    if cur:
+        clauses.append(" ".join(cur))
+    return clauses
+
+
+def spec_html(n):
+    cl = spec_clauses(n)
+    if not cl:
+        return ""
+    items = "".join(f"<li>{_md(c)}</li>" for c in cl)
+    return f'<ol class="spec">{items}</ol>'
+
+
 # ---------------------------------------------------------------- the run log --------
 def read_records():
     """Every parseable record, oldest first. A torn last line is skipped, not fatal."""
@@ -302,12 +360,17 @@ def _meter_chips(output, elapsed_ms=None):
     return chips
 
 
-def run_log_html():
-    records = read_records()
+def run_log_html(only_round=None, empty=None):
+    """Cards for the runs of one round, or (only_round=None) the ones filed nowhere.
+
+    A record made before the log carried a round has no home, so rather than guess one
+    from `stage` — which counts builds, not rounds — those are listed under the overview.
+    """
+    records = [r for r in read_records() if r.get("round") == only_round]
     if not records:
-        return _card("No runs yet &mdash; when you ask your tutor to run the app for "
-                     "you, the run appears here. Runs you make in your own terminal "
-                     "are yours alone.")
+        return _card(empty or "No runs in this round yet &mdash; when you ask your tutor "
+                     "to run the app, it appears here. Runs you make in your own "
+                     "terminal are yours alone.") if empty is not False else ""
     cards = []
     prev_rows = None
     for i, r in enumerate(records):
@@ -366,11 +429,55 @@ def _stat_sig(p):
 
 def signature():
     """Cheap fingerprint of everything this page renders. No content is read."""
-    raw = "|".join((core.git_head(), _stat_sig(core.RUN_LOG), _stat_sig(core.db_path())))
+    raw = "|".join((core.git_head(), _stat_sig(core.RUN_LOG), _stat_sig(core.db_path()),
+                _stat_sig(core.REPO / "spec/spec.md")))
     return hashlib.sha1(raw.encode()).hexdigest()[:16]
 
 
 CSS = r"""
+/* The round subtabs are this page's secondary bar, so anchored targets must clear it
+   exactly as they do on the diffs page. */
+:root{--sub-h:52px}
+.bar-sub{top:var(--bar-top-h);height:var(--sub-h);z-index:20}
+@media (max-width:699px){ :root{--sub-h:0px} .bar-sub{position:static;height:auto;
+  padding-top:10px;padding-bottom:10px} }
+
+h3{font-family:var(--sans);font-size:14.5px;font-weight:650;margin:26px 0 0;
+  color:var(--base-content-secondary);letter-spacing:.01em}
+
+/* A round band. Everything a round owns sits under one heading rule. */
+.round{margin:38px 0 0;scroll-margin-top:calc(var(--bar-top-h) + var(--sub-h) + 14px)}
+.rhead{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;
+  border-bottom:1px solid var(--base-300);padding-bottom:10px}
+.rnum{font-family:var(--mono);font-size:21px;font-weight:700;color:var(--accent);
+  font-variant-numeric:tabular-nums;line-height:1}
+.rttl{font-size:15.5px;color:var(--base-content);font-weight:550}
+.hereis{font-family:var(--mono);font-size:11.5px;font-weight:650;
+  color:var(--base-content);background:var(--tab-fill);border:1px solid var(--tab-edge);
+  border-radius:999px;padding:2px 10px}
+
+/* The spec, set to be read rather than diffed: prose measure, generous leading, and the
+   clause number pulled into the margin so the sentence starts flush. */
+ol.spec{list-style:none;counter-reset:cl;margin:12px 0 0;padding:0;
+  display:flex;flex-direction:column;gap:12px;max-width:74ch}
+ol.spec li{background:var(--base-100);border:1px solid var(--base-300);
+  border-left:3px solid var(--accent);border-radius:10px;padding:14px 18px;
+  font-size:15.5px;line-height:1.62;color:var(--base-content)}
+ol.spec code{font-family:var(--mono);font-size:.88em;background:var(--base-200);
+  border-radius:4px;padding:1px 5px}
+ol.spec em{color:var(--base-content-secondary);font-style:italic}
+
+.howto{margin:14px 0 0;max-width:74ch}
+.howto p{margin:0 0 12px;color:var(--base-content-secondary);font-size:15px}
+.howto dl{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;margin:0;
+  align-items:baseline}
+.howto dt{font-family:var(--mono);font-size:var(--fs-small)}
+.howto dt code{background:var(--base-200);border-radius:5px;padding:2px 7px;
+  color:var(--base-content)}
+.howto dd{margin:0;color:var(--base-content-secondary);font-size:var(--fs-small)}
+@media (max-width:560px){ .howto dl{grid-template-columns:1fr;gap:2px 0}
+  .howto dd{margin:0 0 8px} }
+
 h2{font-family:var(--mono);font-size:17px;font-weight:650;margin:42px 0 0;
   padding-bottom:10px;border-bottom:1px solid var(--base-300);letter-spacing:-.01em}
 .stage{margin:18px 0 0;font-family:var(--mono);font-size:14px;color:var(--accent-ink);
@@ -435,12 +542,51 @@ svg .node.restored rect{stroke:var(--accent);stroke-width:2}
 JS = ""
 
 
+ROUND_ANCHORS = [("overview", "Overview")] + [(f"r{n}", f"R{n}") for n in range(1, 6)]
+
+HOW_TO = """<div class="howto">
+<p>The tutor runs these for you when you ask; anything it runs on your behalf lands in
+that round's <em>Runs</em> below. What you run in your own terminal stays yours.</p>
+<dl>
+  <dt><code>src/snackbot.py "…"</code></dt><dd>one turn, with the meter line</dd>
+  <dt><code>src/snackbot.py --x5</code></dt><dd>the same turn five times, counted</dd>
+  <dt><code>setup/show_memory.py</code></dt><dd>prints the tables as they stand</dd>
+  <dt><code>setup/reset_memory.py</code></dt><dd>restores the shipped 5/5/7 seed</dd>
+</dl></div>"""
+
+
+def round_section(n, commits, here, db_exists):
+    """One round: what it is, and whatever of it exists yet.
+
+    The diagram appears only once the round's build is committed — an unbuilt round has
+    no state to draw, and drawing a future one would be showing something untrue. The
+    spec arrives with its own commit, a round or a phase earlier.
+    """
+    built = (n, "build") in commits
+    body = ""
+    if (n, "spec") in commits and spec_html(n):
+        body += f'<h3>What you specified</h3>{spec_html(n)}'
+    if built:
+        body += f'<h3>How the app worked after this round</h3>{diagram_svg(n, db_exists)}'
+    runs = run_log_html(n, empty=False)
+    if runs:
+        body += f"<h3>Runs your tutor made</h3>{runs}"
+    if not body:
+        body = ('<p class="pending">Not reached yet &mdash; this round&rsquo;s spec, its '
+                'diagram and its runs appear here as you get there.</p>')
+    mark = ' <span class="hereis">you are here</span>' if n == here else ""
+    return (f'<section class="round" id="r{n}">'
+            f'<div class="rhead"><span class="rnum">{n}</span>'
+            f'<span class="rttl">{html.escape(core.ROUND_TITLE[n])}</span>{mark}</div>'
+            f'{body}</section>')
+
+
 def render():
     stage = core.course_stage()
+    commits = set(core.course_commits())
+    here = core.course_round()
+    db_exists = core.db_path().exists()
     if stage:
-        # "as built through", not "at": between a round's demo and the next round's
-        # build the learner has moved on while the app has not, and a bare "Round N"
-        # then contradicts the tutor's own round tag by two whole phases.
         stage_line = (f"App as built through Round {stage} of 5 — "
                       f"{html.escape(core.ROUND_TITLE[stage])}")
     else:
@@ -448,16 +594,22 @@ def render():
                       "Each round's build fills this page in.")
     if core.src_dirty():
         stage_line += " · src/snackbot.py has uncommitted edits"
+
+    rounds = "".join(round_section(n, commits, here, db_exists) for n in range(1, 6))
+    orphans = run_log_html(None, empty=False)
     return f"""<header>
   <h1>A guide to what you've built</h1>
-  <p class="sub">What you have built so far: how it works, what its memory holds, and
-  every run your tutor made on your behalf. The page refreshes itself after each commit
-  and each recorded run.</p>
+  <p class="sub">The course round by round: what each one asks, what you specified, and
+  how the app worked once you built it. Rounds you have not reached yet are listed so
+  you can see where this is going.</p>
   <p class="stage">{stage_line}</p>
 </header>
-<h2>How it works</h2>
-{diagram_svg(stage, core.db_path().exists())}
+<div class="bar bar-sub">{shell.subtab_nav([(i, l, f"#{i}") for i, l in ROUND_ANCHORS], active=f"r{here}")}</div>
+<section id="overview">
+<h2>How to work with the app</h2>
+{HOW_TO}
 <h2>What the memory holds</h2>
 {db_tables_html()}
-<h2>Runs your tutor made for you</h2>
-{run_log_html()}"""
+{f'<h2>Earlier runs</h2>{orphans}' if orphans else ''}
+</section>
+{rounds}"""

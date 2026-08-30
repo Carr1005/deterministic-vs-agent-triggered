@@ -80,6 +80,9 @@ def main():
         "argv": sys.argv[1:],
         "stage": core.course_stage(),
         "src_dirty": core.src_dirty(),
+        # Which round the learner was in — distinct from `stage`, which is how far the
+        # app was built. The guide files each run under the round it belongs to.
+        "round": core.course_round(),
         "exit": rc,
         "ms": round((time.perf_counter() - start) * 1000),
         "output": output,

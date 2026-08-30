@@ -108,6 +108,28 @@ def course_stage():
     return max((n for (n, phase) in course_commits() if phase == "build"), default=0)
 
 
+def course_position():
+    """(round, phase) of the last course commit, or (0, "") before the course starts."""
+    for line in git("log", "--format=%s").splitlines():
+        m = re.match(r"^round-([1-5]) (tutor|spec|build|demo)$", line.strip())
+        if m:
+            return int(m.group(1)), m.group(2)
+    return 0, ""
+
+
+def course_round():
+    """Which round the learner is IN — not how far the app is built.
+
+    `course_stage()` answers a different question and lags this by two phases: a round's
+    build lands after its tutor and spec, so during Round 4's TUTOR the app is still the
+    Round 3 build. Anything filed under "what the learner was doing" needs this one.
+    """
+    n, phase = course_position()
+    if not n:
+        return 1
+    return n + 1 if phase == "demo" and n < 5 else n
+
+
 def src_dirty():
     """Has src/snackbot.py been edited since the last build commit?
 
