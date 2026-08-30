@@ -25,8 +25,13 @@
 
 ## Step 2 — the semantic gap, live
 
-- **Predict:** "Ask about a financier — nothing in the name says almond. If the model
-  checks memory, what phrase will *it* search for, and what phrase is actually stored?"
+- **Point at the evidence — no guessing game.** Both phrases are already on the table:
+  Q2 was exactly this pair, and Step 1 put it on screen — memory stores *"I'm allergic
+  to almonds"*, and the model searches in words of its own. One line of recap, then the
+  real question.
+- **Predict:** "Ask about a financier — nothing in the name says almond. Memory knows
+  the person, the knowledge base knows the pastry: can either store alone flag it? And
+  if the model checks, what will it search for *this* time?"
 - **Run:** `.venv/bin/python src/snackbot.py "Is a financier a good snack for me?"`
 - **Observe (shape):** when the model does reach for them, **both** fire —
   `search_memory(...)` for the allergy and `search_knowledge_base('financier … ingredients
