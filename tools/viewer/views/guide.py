@@ -174,7 +174,8 @@ def _card(text):
 
 def _table_card(name, n, what, cols, body, open_=False):
     head = "".join(f"<th>{c}</th>" for c in cols)
-    return (f'<details class="d"{" open" if open_ else ""}>'
+    # stable id so the shell can reopen this card across an auto-reload
+    return (f'<details class="d" id="tbl-{name}"{" open" if open_ else ""}>'
             f'<summary><span class="file">{name}</span>'
             f'<span class="what">{what}</span><span class="n">{n} row(s)</span></summary>'
             f'<div class="tblwrap"><table class="db"><thead><tr>{head}</tr></thead>'
@@ -308,8 +309,10 @@ def run_log_html(current):
         trunc = ('<p class="note">output truncated for the log; the terminal showed '
                  'all of it.</p>' if r.get("truncated") else "")
         newest = i == len(records) - 1
+        # id from the timestamp: stable across reloads even as newer runs push it down
+        rid = re.sub(r"[^0-9A-Za-z]", "", str(r.get("ts", ""))) or str(i)
         cards.append(
-            f'<details class="d"{" open" if newest else ""}>'
+            f'<details class="d" id="run-{rid}"{" open" if newest else ""}>'
             f'<summary><span class="file">R{stage}</span>'
             f'<span class="what"><code>{html.escape(argv)}</code> · '
             f'{html.escape(str(r.get("ts", "")))}{note}</span>'
@@ -327,11 +330,6 @@ def _stat_sig(p):
         return f"{st.st_mtime_ns}:{st.st_size}"
     except OSError:
         return "absent"
-
-
-# Reload outright: this page's two most-wanted cards (the turns table and the newest run)
-# render open, so a rebuild costs the reader nothing and a recorded run appears at once.
-ON_CHANGE = "reload"
 
 
 def signature():
