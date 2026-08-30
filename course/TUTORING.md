@@ -135,6 +135,8 @@ whatever it printed. When the learner stops for the day, mention
 - Draft each clause **from the learner's recorded answer** in `answers.md`, using the
   clause template in `questions.md`. Prefer their wording wherever technically correct.
 - Show the drafted clause; learner confirms or edits; only then write to `spec/spec.md`.
+  Keep the template's `> ` prefix: a clause is a blockquote in the spec, and that is how
+  `setup/pristine.sh` finds clauses when it checks a copy is safe to share.
 - Commit `round-N spec`, then open the diff dialogue on `git diff HEAD~1 -- spec/`.
 
 ## DEMO mode

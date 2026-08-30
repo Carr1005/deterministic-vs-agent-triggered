@@ -40,7 +40,11 @@ done
 if [ "$total" = 21 ]; then ok "21 placeholders in total"; else bad "$total placeholders in total, expected 21"; fi
 
 echo "== spec (must be the empty scaffold)"
-n="$(count '^> S[1-5]\.' spec/spec.md)"
+# The `> ` is optional here on purpose. Clauses are meant to be blockquotes (TUTORING.md
+# says so, and the templates are written that way), but a tutor reading the `> ` as
+# markdown quoting rather than as part of the clause writes them bare — and a played copy
+# must be caught either way. Observed in a real session before this was widened.
+n="$(count '^>? *S[1-5]\.' spec/spec.md)"
 if [ "$n" = 0 ]; then ok "spec/spec.md holds no clauses"
 else bad "spec/spec.md holds $n clause line(s) — the spec has been filled in"; fi
 lines="$(wc -l < spec/spec.md | tr -d ' ')"

@@ -284,7 +284,9 @@ def check_unplayed_base(dest):
     overwritten wholesale each round, so it needs no check.
     """
     spec = (dest / "spec/spec.md").read_text(encoding="utf-8")
-    if re.search(r"^> S[1-5]\.", spec, re.M):
+    # `> ` optional, matching setup/pristine.sh: a tutor may write clauses bare, and a
+    # replay must not build on top of a filled spec whichever form it is in.
+    if re.search(r"^>? *S[1-5]\.", spec, re.M):
         raise SystemExit(
             "FAIL  spec/spec.md already holds clauses, so it is not the empty scaffold\n"
             "      the replay builds on. Commit or revert your spec before replaying.")
