@@ -422,6 +422,13 @@ def main():
     print("      no model was called and the answers are the course's own prose.")
 
     if a.serve:
+        # Stop first, always. A server already on this port was started from the sandbox
+        # we just rebuilt, so `--ensure` would recognise the path and reuse it — and that
+        # process still holds the Python it was started with. Anyone previewing a change
+        # to the viewer would be served the version they are trying to replace.
+        subprocess.run(("bash", "tools/viewer/serve.sh", "--stop",
+                        "--port", str(a.port)), cwd=dest,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         subprocess.run(("bash", "tools/viewer/serve.sh", "--ensure",
                         "--port", str(a.port)), cwd=dest)
     return 0
