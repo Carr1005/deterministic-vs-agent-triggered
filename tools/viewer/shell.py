@@ -77,8 +77,11 @@ pre{margin:0;background:var(--sunken);color:var(--term-fg);font-family:var(--mon
 .add{color:var(--moss)}.del{color:var(--rust)}
 /* Inserted by the poll script after the tab bar; never present in the served markup, so
    it cannot disturb the sibling chain views/diffs.py's toggle depends on. */
+/* A status, not an error — neutral, and injected by script after the tab bar, so it is
+   absent from the served markup and cannot disturb the sibling chain the diffs page's
+   unified/side-by-side toggle depends on. */
 .notice{margin:14px 0 0;padding:9px 13px;border:1px solid var(--rule);
-  border-left:3px solid var(--rust);background:var(--surface);
+  border-left:3px solid var(--faint);background:var(--surface);
   font-family:var(--mono);font-size:12.5px;color:var(--dim)}
 .err{margin:24px 0 0;border:1px solid var(--rust);background:var(--surface);padding:16px}
 .err h2{margin:0 0 8px;font-family:var(--mono);font-size:15px;color:var(--rust)}
@@ -96,9 +99,10 @@ footer code{font-family:var(--mono);font-size:12px}
 # are stashed first and restored on the way back in. Cards are matched by id, which is
 # why views give theirs stable ones.
 #
-# One thing a silent reload cannot say: the server reaps itself after an idle hour, and a
-# page that simply goes quiet is indistinguishable from one that is up to date. Three
-# failed polls in a row say so out loud.
+# The poll doubles as the signal that keeps the server alive while a page is on screen
+# (serve.py's /state route). It can still die under a page — a laptop asleep past the
+# idle hour, or `serve.sh --stop` at the end of the day — and a page that simply goes
+# quiet is indistinguishable from one that is up to date, so sustained silence says so.
 POLL_JS = """
 <script>
 (function () {
@@ -127,20 +131,35 @@ POLL_JS = """
     location.reload();
   }
 
-  setInterval(function () {
-    fetch("/state/__ID__").then(function (r) { return r.text(); }).then(function (h) {
+  function check() {
+    // The flag is what keeps the server alive while someone is actually reading, without
+    // a tab forgotten in a background window doing the same. See serve.py's /state route.
+    var seen = document.visibilityState !== "hidden";
+    fetch("/state/__ID__" + (seen ? "?watching=1" : "")).then(function (r) {
+      return r.text();
+    }).then(function (h) {
       fails = 0;
+      if (note) { note.remove(); note = null; }   // it answered again; stop saying it did not
       if (h && h !== cur) reload();
     }).catch(function () {
-      // Only after ~9s of silence, so a restart does not flash a scare.
-      if (++fails === 3) {
-        note = note || document.querySelector("nav.tabs")
+      // Only after 30s of silence. Restarting the server takes a second or two, and a
+      // warning that flashes during an ordinary restart costs more trust than one that
+      // arrives half a minute late.
+      if (++fails === 10) {
+        note = document.querySelector("nav.tabs")
           .insertAdjacentElement("afterend", document.createElement("div"));
         note.className = "notice";
-        note.textContent = "The viewer has stopped. Ask your tutor to start it again.";
+        note.textContent = "The viewer has stopped, so this page is no longer updating.";
       }
     });
-  }, 3000);
+  }
+
+  setInterval(check, 3000);
+  // Coming back to a backgrounded tab: revive it and refresh at once, rather than
+  // showing whatever was on screen for up to another three seconds.
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible") check();
+  });
 })();
 </script>
 """

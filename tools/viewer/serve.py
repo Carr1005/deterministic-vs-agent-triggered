@@ -96,15 +96,26 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        path = self.path.split("?", 1)[0].rstrip("/") or "/"
+        head, _, query = self.path.partition("?")
+        path = head.rstrip("/") or "/"
 
         if path == "/healthz":
             self.server.last_seen = time.time()
             return self._send(200, HEALTH_TOKEN, TEXT)
 
         if path.startswith("/state/"):
-            # Deliberately does NOT refresh last_seen: a page polls this every few
-            # seconds, and a forgotten open tab must not keep the server alive forever.
+            # A poll counts as activity only when the page says it is actually on screen.
+            #
+            # This route is a page asking "has anything changed?", which a tab does
+            # whether or not a human is present — so treating every poll as activity
+            # would mean a forgotten tab kept the server alive indefinitely, and the idle
+            # shutdown would never fire. Treating none of them as activity was the
+            # earlier rule, and it went too far the other way: a page being read right
+            # now was indistinguishable from an abandoned one, so the server died under
+            # the reader. The visibility flag is what makes "someone is watching"
+            # expressible at all. A backgrounded or closed tab still expires.
+            if query == "watching=1":
+                self.server.last_seen = time.time()
             view = BY_ID.get(path[len("/state/"):])
             if view is None:
                 return self._send(404, "not found", TEXT)
