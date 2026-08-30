@@ -329,6 +329,11 @@ def _stat_sig(p):
         return "absent"
 
 
+# Reload outright: this page's two most-wanted cards (the turns table and the newest run)
+# render open, so a rebuild costs the reader nothing and a recorded run appears at once.
+ON_CHANGE = "reload"
+
+
 def signature():
     """Cheap fingerprint of everything this page renders. No content is read."""
     raw = "|".join((core.git_head(), _stat_sig(core.RUN_LOG), _stat_sig(core.db_path())))

@@ -75,6 +75,13 @@ pre{margin:0;background:var(--sunken);color:var(--term-fg);font-family:var(--mon
   font-size:12.5px;line-height:1.55;padding:14px;overflow-x:auto;white-space:pre;
   border-top:1px solid var(--rule)}
 .add{color:var(--moss)}.del{color:var(--rust)}
+/* Inserted by the poll script after the tab bar; never present in the served markup, so
+   it cannot disturb the sibling chain views/diffs.py's toggle depends on. */
+.notice{margin:14px 0 0;padding:9px 13px;border:1px solid var(--rule);
+  border-left:3px solid var(--brass);background:var(--surface);
+  font-family:var(--mono);font-size:12.5px;color:var(--dim)}
+.notice.live{cursor:pointer}
+.notice.live:hover{color:var(--ink);border-left-color:var(--petrol)}
 .err{margin:24px 0 0;border:1px solid var(--rust);background:var(--surface);padding:16px}
 .err h2{margin:0 0 8px;font-family:var(--mono);font-size:15px;color:var(--rust)}
 .err p{margin:0 0 10px;color:var(--dim);font-size:14px;max-width:66ch}
@@ -83,17 +90,37 @@ footer{margin:56px 0 0;padding-top:20px;border-top:1px solid var(--rule);
 footer code{font-family:var(--mono);font-size:12px}
 """
 
-# Reload only when something actually changed, so scroll position and open cards survive.
-# A view with no signature() gets no script at all — see views/diffs.py for why that is a
-# feature rather than an omission.
+# Watch for change, and act on it the way the view asked: "reload" for a page whose cards
+# are open by default and cheap to rebuild, "notify" for one where a reload would slam
+# shut everything the reader had opened. A view with no signature() gets no script at all.
+#
+# The third state matters as much as the other two: the server reaps itself after an idle
+# hour, and a page that just goes quiet is indistinguishable from a page that is merely
+# up to date. Three consecutive failed polls say so out loud instead.
 POLL_JS = """
 <script>
 (function () {
-  var cur = "__SIG__";
+  var cur = "__SIG__", mode = "__MODE__", fails = 0, note = null;
+  function say(text, reloadable) {
+    if (!note) {
+      note = document.createElement("div");
+      note.className = "notice";
+      document.querySelector("nav.tabs").insertAdjacentElement("afterend", note);
+    }
+    note.textContent = text;
+    note.className = reloadable ? "notice live" : "notice";
+    note.onclick = reloadable ? function () { location.reload(); } : null;
+  }
   setInterval(function () {
     fetch("/state/__ID__").then(function (r) { return r.text(); }).then(function (h) {
-      if (h && h !== cur) location.reload();
-    }).catch(function () {});   // server gone (idle reaper): go quiet, no errors
+      fails = 0;
+      if (!h || h === cur) return;
+      if (mode === "reload") location.reload();
+      else say("Your git history has moved on. Reload to see it.", true);
+    }).catch(function () {
+      // Only after ~9s of silence, so a restart does not flash a scare.
+      if (++fails === 3) say("The viewer has stopped. Ask your tutor to start it again.", false);
+    });
   }, 3000);
 })();
 </script>
@@ -125,7 +152,8 @@ def error_card(view_id, exc):
 
 def page(view, views, body, signature):
     poll = "" if signature is None else (
-        POLL_JS.replace("__SIG__", signature).replace("__ID__", view.ID))
+        POLL_JS.replace("__SIG__", signature).replace("__ID__", view.ID)
+        .replace("__MODE__", getattr(view, "ON_CHANGE", "reload")))
     # The view's fragment is spliced in UNWRAPPED, as a direct child sequence of .wrap.
     # Do not add a container: views/diffs.py's toggle uses the general-sibling selector
     # `#v-split:checked~.rounds`, and a wrapper would silently break side-by-side while

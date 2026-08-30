@@ -7,6 +7,9 @@
 #   CSS, JS        emitted after the shell's, and only on this view's page
 #   render()       the ENTIRE body below the tab bar, including the view's own <header>
 #   signature()    a cheap change fingerprint for /state/<id>, or None for no polling
+#   ON_CHANGE      optional: "reload" (default) rebuilds the page when the fingerprint
+#                  moves; "notify" shows a dismissable line instead, for a page whose
+#                  cards are closed by default and would be slammed shut by a reload
 #
 # A view owns its whole body on purpose: the two pages are meant to grow in different
 # directions, and the shell should never be the thing that has to change when one does.

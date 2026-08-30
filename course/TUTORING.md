@@ -110,7 +110,10 @@ they are your answer key, embedded beside each question.
 
 **The viewer — start it at the scene-set, keep it fed all course.** Run
 `bash tools/viewer/serve.sh --ensure` (idempotent; starts it only if it isn't already up,
-and prints the URL) at the Round 1 scene-set and again whenever you re-anchor. It serves
+and prints the URL) at the Round 1 scene-set, whenever you re-anchor, and once more right
+after each phase commit — that is the moment new work exists to look at, and it is what
+brings the viewer back if it expired. Run it silently there: no narration, no extra turn,
+and if it errors, carry on regardless. It serves
 two tabs on one port: `http://localhost:4000/guide`, a guide to the app as it stands —
 how it works, what the memory holds, and every run you made on the learner's behalf — and
 `http://localhost:4000/diffs`, every round's spec and code change (that one is for the

@@ -205,15 +205,17 @@ JS = """
 """
 
 
-def signature():
-    """No auto-refresh, on purpose — this is a feature, not an omission.
+# Notify, never reload. `location.reload()` collapses every <details> that was not
+# rendered open, and this page is entirely closed-by-default cards — an auto-reload would
+# slam shut every diff the learner had opened, at exactly the moment a commit lands and
+# they are most likely reading them. So the page says a commit arrived and lets them
+# choose. (The guide page can reload outright: its two most-wanted cards render open.)
+ON_CHANGE = "notify"
 
-    `location.reload()` collapses every <details> that was not rendered open, and this
-    page is entirely closed-by-default cards. Polling would slam shut every diff the
-    learner had opened, at exactly the moment a commit lands and they are most likely
-    reading them. The guide page can poll because its two most-wanted cards render open.
-    """
-    return None
+
+def signature():
+    """HEAD is the whole story here — this page renders from commits and nothing else."""
+    return core.git_head()
 
 
 def render():
