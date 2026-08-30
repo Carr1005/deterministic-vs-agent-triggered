@@ -61,6 +61,11 @@ def diff_html(diff):
 
     Joined with no separator on purpose. The blocks supply the line breaks; a newline
     between them would be rendered too, and every line would carry double leading.
+
+    The lines sit inside one `.dlw` wrapper sized to max-content. A block line is only as
+    wide as the panel's *visible* box, so on a diff wide enough to scroll, a wash would
+    stop at the fold and the rest of the line would sit on bare background; filling a
+    max-content wrapper instead makes it span the whole scroll width.
     """
     out = []
     for ln in diff.split("\n"):
@@ -75,7 +80,7 @@ def diff_html(diff):
         else:
             cls = "dl"
         out.append(f'<span class="{cls}">{html.escape(ln)}</span>')
-    return "".join(out)
+    return f'<span class="dlw">{"".join(out)}</span>' 
 
 
 HUNK = re.compile(r"^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@")
@@ -177,7 +182,11 @@ ul.matched code{background:none;border:0;padding:0;color:var(--accent-ink);font-
    side-by-side table below, mixed from the same tokens — the two views render the same
    diff, so they should not encode it differently. inline-block + min-width:100% makes a
    wash span the full scroll width, not just the visible box. */
-pre .dl{display:inline-block;min-width:100%}
+pre .dlw{display:block;width:max-content;min-width:100%}
+/* block, NOT inline-block: `pre` sets white-space:pre, which disables wrapping, and an
+   inline-level box only moves to a new line by wrapping — so inline-block put every line
+   of the diff on one endless row. min-width does not break lines; only a block box does. */
+pre .dl{display:block}
 pre .dl:empty::after{content:"\00a0"}
 pre .dl.ins{background:color-mix(in srgb, var(--success) 26%, transparent)}
 pre .dl.rem{background:color-mix(in srgb, var(--primary) 22%, transparent)}
