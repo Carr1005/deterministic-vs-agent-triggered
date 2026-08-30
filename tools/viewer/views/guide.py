@@ -238,10 +238,14 @@ def db_tables_html():
 
 
 # ---------------------------------------------------------------- the file map ------
-# What each file is FOR, not what state it is in. A role holds in every round, so these
-# never go stale — and the diagram below already shows the app's current shape, which is
-# the job a state description would have been doing twice.
-#                 path,                     role,                                  size
+# What each file is FOR — nothing about its current state, and no live figures.
+#
+# This map answers "which part is which". Sizes were here once: they told the reader
+# little (meter.py's line count is not something a learner acts on) and each duplicated
+# something rendered in full further down the page — the diagram shows the app growing,
+# the spec sections list the clauses, the tables show the rows. Anything not rendered
+# cannot fall out of sync, so the cheapest way to keep this honest is to say less.
+#                 path,                     role
 FILES = (
     ("dir",  "src/", ""),
     ("you",  "src/snackbot.py",       "the conversation itself &mdash; the one file "
@@ -260,25 +264,6 @@ FILES = (
 )
 
 
-def _lines(rel):
-    try:
-        return f"{sum(1 for _ in (core.REPO / rel).open('rb')):,} lines"
-    except OSError:
-        return "missing"
-
-
-def _size(kind, rel):
-    """The one fact per row worth reading off disk — everything else here is fixed."""
-    if kind == "root":
-        rows = core.db_counts()
-        return " · ".join(str(rows[t]) for t in core.TABLES) + " rows" if rows \
-            else "not created yet"
-    if rel.endswith("spec.md"):
-        n = sum(len(spec_clauses(i)) for i in range(1, 6))
-        return f"{n} clause{'' if n == 1 else 's'}" if n else "still empty"
-    return _lines(rel)
-
-
 def file_tree_html():
     rows = []
     for kind, rel, role in FILES:
@@ -289,7 +274,6 @@ def file_tree_html():
         cls = {"you": "frow yours", "root": "frow root"}.get(kind, "frow")
         rows.append(f'<div class="{cls}">'
                     f'<span class="fname">{html.escape(name)}</span>'
-                    f'<span class="fsize">{html.escape(_size(kind, rel))}</span>'
                     f'<span class="farrow" aria-hidden="true">&rarr;</span>'
                     f'<span class="frole">{role}</span></div>')
     return (f'<div class="ftree">{"".join(rows)}</div>'
@@ -533,7 +517,7 @@ ol.spec em{color:var(--base-content-secondary);font-style:italic}
 .ftree{margin:14px 0 0;border:1px solid var(--base-300);background:var(--base-100);
   border-radius:12px;padding:14px 16px;font-family:var(--mono);
   font-size:var(--fs-small);display:grid;
-  grid-template-columns:auto auto auto 1fr;align-items:baseline;gap:2px 0}
+  grid-template-columns:auto auto 1fr;align-items:baseline;gap:2px 0}
 .fdir{grid-column:1/-1;color:var(--base-content-secondary);margin-top:8px}
 .fdir:first-child{margin-top:0}
 .frow{grid-column:1/-1;display:grid;grid-template-columns:subgrid;
@@ -541,9 +525,7 @@ ol.spec em{color:var(--base-content-secondary);font-style:italic}
 .frow.root{margin-top:8px}
 .frow.root .fname{padding-left:0}
 .fname{color:var(--base-content);font-weight:650;padding-left:18px;
-  padding-right:16px;white-space:nowrap}
-.fsize{color:var(--base-content-secondary);font-variant-numeric:tabular-nums;
-  white-space:nowrap;padding-right:14px}
+  padding-right:14px;white-space:nowrap}
 .farrow{color:var(--base-content-secondary);padding-right:10px}
 .frole{color:var(--base-content-secondary);font-family:var(--sans);line-height:1.5}
 /* the one file the learner edits, marked so the map answers "which part is mine" */
