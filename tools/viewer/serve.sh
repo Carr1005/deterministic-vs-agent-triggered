@@ -11,7 +11,9 @@
 #              this repo is ever written to, because `git status --porcelain` is the
 #              tutor's mid-round resume signal (see course/PROTOCOL.md).
 #
-# The server also shuts itself down after 60 idle minutes, so a forgotten one expires.
+# The server shuts itself down after 60 minutes with no page on screen — a poll from a
+# visible tab counts as activity, a backgrounded or closed one does not, so a viewer left
+# open in the foreground stays up and a forgotten one still expires.
 # Background output goes to $TMPDIR, deliberately outside the repo.
 set -u
 cd "$(dirname "$0")/../.."

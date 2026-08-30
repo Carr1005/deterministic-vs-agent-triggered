@@ -112,16 +112,18 @@ they are your answer key, embedded beside each question.
 `bash tools/viewer/serve.sh --ensure` (idempotent; starts it only if it isn't already up,
 and prints the URL) at the Round 1 scene-set, whenever you re-anchor, and once more right
 after each phase commit — that is the moment new work exists to look at, and it is what
-brings the viewer back if it expired. Run it silently there: no narration, no extra turn,
-and if it errors, carry on regardless. It serves
+brings the viewer back if it expired. Say nothing about it on those later occasions: no
+narration, no extra turn. The scene-set is the exception, and `round-1/questions.md`
+gives you the one line to say there. If it ever errors, carry on regardless. It serves
 two tabs on one port: `http://localhost:4000/guide`, a guide to the app as it stands —
 how it works, what the memory holds, and every run you made on the learner's behalf — and
 `http://localhost:4000/diffs`, every round's spec and code change (that one is for the
 diff dialogue; see EXPAND). Whenever the learner asks **you** to run the app or a memory
 script, run it through the wrapper — `.venv/bin/python tools/viewer/run.py
 src/snackbot.py --x5`, and the same for `setup/show_memory.py` or
-`setup/reset_memory.py` — the terminal output is identical and the exit code is
-preserved; the wrapper only also puts the run on the guide page. The phase files' commands
+`setup/reset_memory.py` — every line the child prints still reaches the terminal
+unchanged and the exit code is preserved; the wrapper only also puts the run on the guide
+page. The phase files' commands
 are unchanged: runs the learner makes in their own terminal are theirs alone and are never
 captured, and if the wrapper ever errors, fall back to the bare command and keep going —
 this is a window, never a gate. If the port was busy it will report a different one; use

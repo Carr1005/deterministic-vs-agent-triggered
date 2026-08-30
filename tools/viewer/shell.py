@@ -75,8 +75,6 @@ pre{margin:0;background:var(--sunken);color:var(--term-fg);font-family:var(--mon
   font-size:12.5px;line-height:1.55;padding:14px;overflow-x:auto;white-space:pre;
   border-top:1px solid var(--rule)}
 .add{color:var(--moss)}.del{color:var(--rust)}
-/* Inserted by the poll script after the tab bar; never present in the served markup, so
-   it cannot disturb the sibling chain views/diffs.py's toggle depends on. */
 /* A status, not an error — neutral, and injected by script after the tab bar, so it is
    absent from the served markup and cannot disturb the sibling chain the diffs page's
    unified/side-by-side toggle depends on. */
@@ -134,7 +132,10 @@ POLL_JS = """
   function check() {
     // The flag is what keeps the server alive while someone is actually reading, without
     // a tab forgotten in a background window doing the same. See serve.py's /state route.
-    var seen = document.visibilityState !== "hidden";
+    // `=== "visible"`, not `!== "hidden"`: were the API ever missing, the negative form
+    // would send the flag forever and keep a forgotten tab's server alive, which is the
+    // one thing it exists to prevent. Absent means "do not count", the safe direction.
+    var seen = document.visibilityState === "visible";
     fetch("/state/__ID__" + (seen ? "?watching=1" : "")).then(function (r) {
       return r.text();
     }).then(function (h) {
@@ -142,9 +143,9 @@ POLL_JS = """
       if (note) { note.remove(); note = null; }   // it answered again; stop saying it did not
       if (h && h !== cur) reload();
     }).catch(function () {
-      // Only after 30s of silence. Restarting the server takes a second or two, and a
-      // warning that flashes during an ordinary restart costs more trust than one that
-      // arrives half a minute late.
+      // Ten failed polls — 30s at the interval, sooner if a tab switch checks off
+      // cadence. Restarting the server takes a second or two, and a warning that flashes
+      // during an ordinary restart costs more trust than one that arrives late.
       if (++fails === 10) {
         note = document.querySelector("nav.tabs")
           .insertAdjacentElement("afterend", document.createElement("div"));
@@ -173,7 +174,7 @@ def tab_nav(active_id, views):
     return f'<nav class="tabs">{"".join(links)}</nav>'
 
 
-def error_card(view_id, exc):
+def error_card(exc):
     """What a view renders as when it raises. The tab bar stays above it.
 
     These views read a live git history and a live sqlite file, so they can meet states

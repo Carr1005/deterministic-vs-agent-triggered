@@ -51,7 +51,7 @@ class _BrokenView:
         self._exc = exc
 
     def render(self):
-        return shell.error_card(self.ID, self._exc)
+        return shell.error_card(self._exc)
 
     def signature(self):
         return None
@@ -147,7 +147,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             # meet states the code has never seen. An error card with the tab bar still
             # above it leaves the other page one click away.
             print(f"WARN  {view.ID} render failed: {type(e).__name__}: {e}")
-            body, sig = shell.error_card(view.ID, e), None
+            body, sig = shell.error_card(e), None
         self._send(200, shell.page(view, VIEWS, body, sig))
 
     def log_message(self, fmt, *args):   # one tidy line, to stdout only
