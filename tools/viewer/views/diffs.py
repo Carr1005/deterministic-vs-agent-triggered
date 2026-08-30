@@ -41,10 +41,15 @@ def scoped_diff(sha, path):
 
 
 def counts(diff):
+    # The trailing space is load-bearing: a file header is always `--- a/path` or
+    # `+++ b/path`, while a *removed* line that itself reads `---` arrives as `----`.
+    # Matching the bare prefix mistook that deletion for a header, so it went uncounted
+    # here and grey in diff_html while split_html drew it red — the two views
+    # disagreeing, which the docstring below promises cannot happen.
     add = sum(1 for l in diff.splitlines()
-              if l.startswith("+") and not l.startswith("+++"))
+              if l.startswith("+") and not l.startswith("+++ "))
     rm = sum(1 for l in diff.splitlines()
-             if l.startswith("-") and not l.startswith("---"))
+             if l.startswith("-") and not l.startswith("--- "))
     return add, rm
 
 
@@ -54,11 +59,11 @@ def diff_html(diff):
         e = html.escape(ln)
         if ln.startswith("@@"):
             out.append(f'<span class="hunk">{e}</span>')
-        elif ln.startswith("+") and not ln.startswith("+++"):
+        elif ln.startswith("+") and not ln.startswith("+++ "):
             out.append(f'<span class="add">{e}</span>')
-        elif ln.startswith("-") and not ln.startswith("---"):
+        elif ln.startswith("-") and not ln.startswith("--- "):
             out.append(f'<span class="del">{e}</span>')
-        elif ln.startswith(("diff --git", "index ", "+++", "---")):
+        elif ln.startswith(("diff --git", "index ", "+++ ", "--- ")):
             out.append(f'<span class="meta">{e}</span>')
         else:
             out.append(e)
