@@ -150,48 +150,68 @@ def split_html(diff):
 
 CSS = r"""
 ul.matched{list-style:none;margin:10px 0 0;padding:0;display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:2px 20px;
-  font-family:var(--mono);font-size:12.5px;color:var(--dim);max-width:640px}
-ul.matched code{background:none;border:0;padding:0;color:var(--petrol);font-weight:600}
-.round{margin:44px 0 0}
-.rhead{display:flex;gap:12px;align-items:baseline;border-bottom:1px solid var(--rule);
-  padding-bottom:8px}
-.rnum{font-family:var(--mono);font-size:20px;font-weight:600;color:var(--petrol);
-  font-variant-numeric:tabular-nums}
-.rttl{font-size:15px;color:var(--ink)}
-.n i{color:var(--rust);font-style:normal;font-weight:600}
-.hunk{color:var(--brass)}
-.meta{color:var(--faint)}
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:3px 22px;
+  font-family:var(--mono);font-size:var(--fs-small);
+  color:var(--base-content-secondary);max-width:700px}
+ul.matched code{background:none;border:0;padding:0;color:var(--info);font-weight:650}
 
-/* View toggle. The inputs must stay direct siblings of .rounds for the sibling
-   combinator below to reach the diffs, so they are not wrapped in a container — and
-   shell.py splices this fragment in unwrapped for the same reason. */
+/* A round is a titled band. The number carries the colour so the title can stay at
+   full-contrast body ink. */
+.round{margin:40px 0 0}
+.rhead{display:flex;gap:12px;align-items:baseline;
+  border-bottom:1px solid var(--base-300);padding-bottom:10px}
+.rnum{font-family:var(--mono);font-size:21px;font-weight:700;color:var(--info);
+  font-variant-numeric:tabular-nums;line-height:1}
+.rttl{font-size:15.5px;color:var(--base-content);font-weight:550}
+.n i{color:var(--danger-ink);font-style:normal;font-weight:650}
+.hunk{color:var(--warning)}
+.meta{color:var(--code-dim)}
+
+/* View toggle — the `.subtabs` component from shell.py, one step quieter than the
+   top-level tabs so two segmented controls never compete. The inputs must stay direct
+   siblings of .rounds for the sibling combinator below to reach the diffs, so they are
+   not wrapped in a container — and shell.py splices this fragment in unwrapped for the
+   same reason. */
 input[name="v"]{position:absolute;opacity:0;pointer-events:none}
-label[for^="v-"]{display:inline-block;border:1px solid var(--rule);padding:5px 12px;
-  margin:20px 0 0;cursor:pointer;color:var(--dim);background:var(--surface);
-  font-family:var(--mono);font-size:12px;user-select:none}
-label[for="v-uni"]{border-radius:2px 0 0 2px}
-label[for="v-split"]{border-radius:0 2px 2px 0;border-left:0;margin-left:-4px}
-input[name="v"]:checked+label{background:var(--petrol);border-color:var(--petrol);color:#fff}
-input[name="v"]:focus-visible+label{outline:2px solid var(--brass);outline-offset:1px}
+label[for^="v-"]{display:inline-flex;align-items:center;gap:7px;padding:6px 15px;
+  margin:20px 0 0;cursor:pointer;border-radius:999px;user-select:none;
+  color:var(--base-content-secondary);background:var(--base-200);
+  border:1px solid transparent;font-family:var(--mono);font-size:var(--fs-small);
+  font-weight:600}
+label[for="v-split"]{margin-left:6px}
+label[for^="v-"]:hover{color:var(--base-content)}
+input[name="v"]:checked+label{background:var(--tab-fill);color:var(--base-content);
+  border-color:var(--tab-edge)}
+input[name="v"]:focus-visible+label{outline:2px solid var(--accent);outline-offset:2px}
 table.sbs{display:none}
 #v-split:checked~.rounds pre.uni{display:none}
 #v-split:checked~.rounds table.sbs{display:table}
 
-/* side-by-side. The code panel is dark in both themes, so these washes need no
-   theme branching. */
-table.sbs{width:100%;table-layout:fixed;border-collapse:collapse;background:var(--sunken);
-  font-family:var(--mono);font-size:12.5px;line-height:1.55;
-  border-top:1px solid var(--rule)}
-table.sbs col.cln{width:3.2em}
-table.sbs td{vertical-align:top;padding:0 8px;color:var(--term-fg);
+/* Portrait: two columns of code in a phone-width column is unreadable, so side by side
+   is a wide-viewport affordance. The control is hidden and unified always wins — the
+   radio keeps its state, so rotating to landscape restores the choice untouched. */
+@media (max-width:699px){
+  label[for^="v-"]{display:none}
+  #v-split:checked~.rounds pre.uni{display:block}
+  #v-split:checked~.rounds table.sbs{display:none}
+}
+
+/* Side-by-side. Sits on the same dark panel as the unified view, so the washes are
+   mixed from the palette rather than invented: a tint of the token that already means
+   added or removed, laid over the code surface. */
+table.sbs{width:100%;table-layout:fixed;border-collapse:collapse;
+  background:var(--neutral);font-family:var(--mono);font-size:var(--fs-code);
+  line-height:var(--lh-code);border-top:1px solid var(--base-300)}
+table.sbs col.cln{width:3.4em}
+table.sbs td{vertical-align:top;padding:0 10px;color:var(--neutral-content);
   white-space:pre-wrap;overflow-wrap:anywhere}
-table.sbs td.ln{text-align:right;color:#5f6f72;font-variant-numeric:tabular-nums;
-  user-select:none;padding:0 6px}
-table.sbs td.tx.o{background:rgba(224,90,70,.16)}
-table.sbs td.tx.n{background:rgba(110,190,90,.15)}
-table.sbs td.pad{background:rgba(255,255,255,.028)}
-table.sbs td.hunkrow{color:var(--brass);background:rgba(255,255,255,.05);padding:3px 8px}
+table.sbs td.ln{text-align:right;color:var(--code-dim);
+  font-variant-numeric:tabular-nums;user-select:none;padding:0 8px}
+table.sbs td.tx.o{background:color-mix(in srgb, var(--primary) 22%, transparent)}
+table.sbs td.tx.n{background:color-mix(in srgb, var(--success) 26%, transparent)}
+table.sbs td.pad{background:color-mix(in srgb, var(--neutral-content) 4%, transparent)}
+table.sbs td.hunkrow{color:var(--warning);padding:4px 10px;
+  background:color-mix(in srgb, var(--neutral-content) 7%, transparent)}
 """
 
 JS = """

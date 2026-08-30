@@ -371,53 +371,65 @@ def signature():
 
 
 CSS = r"""
-h2{font-family:var(--mono);font-size:16px;font-weight:600;margin:44px 0 0;
-  padding-bottom:8px;border-bottom:1px solid var(--rule)}
-.stage{margin:20px 0 0;font-family:var(--mono);font-size:14px;color:var(--petrol);
-  font-weight:600}
+h2{font-family:var(--mono);font-size:17px;font-weight:650;margin:42px 0 0;
+  padding-bottom:10px;border-bottom:1px solid var(--base-300);letter-spacing:-.01em}
+.stage{margin:18px 0 0;font-family:var(--mono);font-size:14px;color:var(--info);
+  font-weight:650}
 
 /* overrides of the shared vocabulary: this page uses these in denser contexts than
    the diffs page's header does */
 .state{margin:14px 0 0}
 details.src{margin:10px 0 0}
-p.note{margin:8px 14px;max-width:70ch}
+p.note{margin:10px 16px;max-width:70ch}
 
 /* shell.py gives .n b the success colour; a short SAFE count or a negative row delta is
    not success, so those are marked with <i> instead. */
-.n i{color:var(--rust);font-style:normal;font-weight:600}
-.what code{font-family:var(--mono);color:var(--ink)}
-.ok{color:var(--moss);font-weight:600;flex:none}.bad{color:var(--rust);font-weight:600;flex:none}
-.dim{color:var(--faint)}
-.meter{color:var(--brass)}.tool{color:var(--petrol)}.turn{font-weight:600}
-.tblwrap{overflow-x:auto;border-top:1px solid var(--rule)}
-table.db{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12.5px}
-table.db th{text-align:left;padding:7px 10px;color:var(--faint);font-weight:600;
-  border-bottom:1px solid var(--rule);white-space:nowrap}
-table.db td{padding:6px 10px;vertical-align:top;border-bottom:1px solid var(--rule)}
+.n i{color:var(--danger-ink);font-style:normal;font-weight:650}
+.what code{font-family:var(--mono);color:var(--base-content)}
+.ok{color:var(--success-ink);font-weight:650;flex:none}
+.bad{color:var(--danger-ink);font-weight:650;flex:none}
+.dim{color:var(--base-content-secondary)}
+.meter{color:var(--warning)}
+.tool{color:var(--secondary-content)}
+.turn{font-weight:650;color:var(--base-100)}
+
+/* Tables scroll inside their own card rather than widening the page. */
+.tblwrap{overflow-x:auto;border-top:1px solid var(--base-300)}
+table.db{width:100%;border-collapse:collapse;font-family:var(--mono);
+  font-size:var(--fs-small)}
+table.db th{text-align:left;padding:9px 12px;color:var(--base-content-secondary);
+  font-weight:650;border-bottom:1px solid var(--base-300);white-space:nowrap;
+  background:var(--base-150)}
+table.db td{padding:8px 12px;vertical-align:top;border-bottom:1px solid var(--hairline)}
 table.db tr:last-child td{border-bottom:0}
-td.num{white-space:nowrap;color:var(--faint);font-variant-numeric:tabular-nums}
-td.role{white-space:nowrap;color:var(--petrol);font-weight:600}
-td.vec{color:var(--faint);max-width:340px;overflow-wrap:anywhere}
-.panel{margin:16px 0 0;border:1px solid var(--rule);background:var(--surface);
-  padding:10px 10px 4px}
+td.num{white-space:nowrap;color:var(--base-content-secondary);
+  font-variant-numeric:tabular-nums}
+td.role{white-space:nowrap;color:var(--info);font-weight:650}
+td.vec{color:var(--base-content-secondary);max-width:340px;overflow-wrap:anywhere}
+
+/* The diagram panel. On a wide viewport it sits beside its own legend rather than
+   stacking, which is the one place this page can spend horizontal room usefully. */
+.panel{margin:16px 0 0;border:1px solid var(--base-300);background:var(--base-100);
+  border-radius:12px;padding:14px 14px 6px}
 .panel svg{width:100%;height:auto;display:block}
-svg text{font-family:var(--mono);font-size:11px;fill:var(--ink)}
-svg text.lane{font-size:12px;fill:var(--faint);font-weight:600}
-svg .node rect{fill:var(--ground);stroke:var(--dim);stroke-width:1.2}
-svg .node.frame rect{fill:none;stroke:var(--rule)}
-svg .node.frame text{fill:var(--faint)}
-svg .node.tbl rect{fill:var(--surface);stroke:var(--petrol)}
+svg text{font-family:var(--mono);font-size:11px;fill:var(--base-content)}
+svg text.lane{font-size:12px;fill:var(--base-content-secondary);font-weight:650}
+svg .node rect{fill:var(--base-150);stroke:var(--base-content-secondary);
+  stroke-width:1.2}
+svg .node.frame rect{fill:none;stroke:var(--base-300)}
+svg .node.frame text{fill:var(--base-content-secondary)}
+svg .node.tbl rect{fill:var(--base-100);stroke:var(--accent)}
 svg .node.tbl text{font-size:9.5px}
 svg .term text{text-anchor:middle}
-svg .edge{stroke:var(--dim);stroke-width:1.4}
-svg .chip rect{fill:var(--surface);stroke:var(--rule)}
-svg .chip text{font-size:9.5px;fill:var(--dim)}
-svg .chip.removed rect{stroke:var(--rust)}
-svg .chip.removed text{fill:var(--rust)}
-svg line.restored{stroke:var(--petrol);stroke-width:2.2}
-svg .chip.restored rect{stroke:var(--petrol)}
-svg .chip.restored text{fill:var(--petrol);font-weight:600}
-svg .node.restored rect{stroke:var(--petrol);stroke-width:2}
+svg .edge{stroke:var(--base-content-secondary);stroke-width:1.4}
+svg .chip rect{fill:var(--base-100);stroke:var(--base-300)}
+svg .chip text{font-size:9.5px;fill:var(--base-content-secondary)}
+svg .chip.removed rect{stroke:var(--primary)}
+svg .chip.removed text{fill:var(--primary)}
+svg line.restored{stroke:var(--accent);stroke-width:2.2}
+svg .chip.restored rect{stroke:var(--accent)}
+svg .chip.restored text{fill:var(--accent);font-weight:650}
+svg .node.restored rect{stroke:var(--accent);stroke-width:2}
 """
 
 JS = ""
