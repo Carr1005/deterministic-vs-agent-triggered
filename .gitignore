@@ -16,6 +16,7 @@ memory.db
 .aider*
 !.aider.conf.yml
 .claude/settings.local.json
+.claude/worktrees/
 CLAUDE.local.md
 .gemini/tmp/
 
