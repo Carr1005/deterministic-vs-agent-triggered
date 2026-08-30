@@ -111,17 +111,32 @@ case "$ACTION" in
       exit 1
     fi
     stopped=0
-    # Scan the range --ensure walks, plus where the pre-merge viewers used to live, and
-    # kill only a port that answers a token we minted — never a stranger.
+    seen=""
+    # Stop ANY viewer of ours, whichever checkout it serves, and name that checkout so
+    # nothing is silent. `--ensure` stays strictly repo-scoped — adopting another tree's
+    # server would quietly show the wrong content — but `--stop` is an explicit act, and
+    # scoping it left an orphan unstoppable: delete a replay sandbox while its viewer
+    # runs and no directory matches its path any more.
     for p in $(seq "$PORT" $((PORT + 5))) $LEGACY_PORTS; do
-      if ours "$p" || legacy "$p"; then
-        if kill_port "$p"; then
+      case " $seen " in *" $p "*) continue ;; esac      # LEGACY_PORTS overlaps the range
+      seen="$seen $p"
+      body="$(probe "$p")"
+      case "$body" in
+        "$TOKEN"*|snackbot-diffview-ok*|snackbot-appview-ok*) ;;
+        *) continue ;;
+      esac
+      served="${body#* }"
+      if kill_port "$p"; then
+        if [ "$served" = "$body" ]; then
           echo "PASS  stopped the viewer on port $p"
-          stopped=1
+        else
+          echo "PASS  stopped the viewer on port $p (was serving $served)"
         fi
+        stopped=1
       fi
     done
-    [ "$stopped" = 1 ] || echo "NOTE  no viewer found on ports $PORT-$((PORT + 5))."
+    [ "$stopped" = 1 ] || echo "NOTE  no viewer of ours found on ports $PORT-$((PORT + 5))
+      or $LEGACY_PORTS."
     ;;
 
   --foreground)
