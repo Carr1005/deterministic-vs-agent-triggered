@@ -48,7 +48,9 @@ ROUND_TITLE = {
     2: "Deterministic memory — code invokes, every turn",
     3: "Agent-triggered memory — the model invokes, via tools",
     4: "Counting — one passing run proves nothing",
-    5: "The per-operation decision — pin exactly one read",
+    # Names the work, not the verdict: "pin exactly one read" was the answer to
+    # the round's own gate, and this label shows on every page from Round 1.
+    5: "The per-operation decision — six operations, one at a time",
 }
 
 
