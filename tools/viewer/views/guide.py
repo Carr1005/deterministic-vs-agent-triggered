@@ -273,18 +273,32 @@ def output_html(text):
     return "\n".join(out)
 
 
-def _meter_chips(output):
+def _meter_chips(output, elapsed_ms=None):
+    """The meter figures for a run — plainly marked as a total when there are several.
+
+    A `--x5` record holds five `[meter]` lines. Summing them is the right thing to show,
+    but the chip borrowed src/meter.py's exact wording, so five runs added together read
+    as one turn's footprint — and its summed latency was the latency of nothing at all.
+    Elapsed comes from the record's own wall-clock instead.
+    """
     hits = METER.findall(output)
     if not hits:
         return ""
     tin = sum(int(h[0]) for h in hits)
     tout = sum(int(h[1]) for h in hits)
     cost = sum(float(h[2]) for h in hits)
-    ms = sum(int(h[3]) for h in hits)
-    chips = f'<span class="n">in {tin} · out {tout} tok · ${cost:.5f} · {ms}ms</span>'
+    lead = "" if len(hits) == 1 else f"{len(hits)} turns · total "
+    took = (f" · {elapsed_ms}ms" if elapsed_ms is not None
+            else f" · {sum(int(h[3]) for h in hits)}ms")
+    chips = (f'<span class="n">{lead}in {tin} · out {tout} tok · ${cost:.5f}'
+             f'{took}</span>')
     m = SAFE.search(output)
     if m:
-        chips += f'<span class="n"><b>{m.group(1)}/5 SAFE</b></span>'
+        # Green only when nothing slipped through: 0/5 is the lesson of Round 4, and it
+        # was rendering in the same colour as a pass.
+        safe = int(m.group(1))
+        tag = "b" if safe == 5 else "i"
+        chips += f'<span class="n"><{tag}>{safe}/5 SAFE</{tag}></span>'
     return chips
 
 
@@ -302,14 +316,19 @@ def run_log_html():
         badge = ('<span class="ok">exit 0</span>' if rc == 0
                  else f'<span class="bad">exit {html.escape(str(rc))}</span>')
         stage = r.get("stage", 0)
-        chips = _meter_chips(r.get("output", ""))
+        chips = _meter_chips(r.get("output", ""), r.get("ms"))
         rows = r.get("db_rows")
         delta = ""
         if isinstance(rows, dict) and isinstance(prev_rows, dict):
             for t in core.TABLES:
                 d = (rows.get(t) or 0) - (prev_rows.get(t) or 0)
                 if d:
-                    delta += f'<span class="n"><b>Δ {t} {d:+d}</b></span>'
+                    # "since the previous recorded run", not "what this run did": runs
+                    # the learner makes in their own terminal fall in the gap, and a
+                    # reset shows up here as a large negative.
+                    tag = "b" if d > 0 else "i"
+                    delta += (f'<span class="n" title="change since the previous '
+                              f'recorded run">Δ {t} <{tag}>{d:+d}</{tag}></span>')
         if isinstance(rows, dict):
             prev_rows = rows
         # The badge answers "which build printed this?", so it says `app R3`, never a
@@ -363,6 +382,9 @@ h2{font-family:var(--mono);font-size:16px;font-weight:600;margin:44px 0 0;
 details.src{margin:10px 0 0}
 p.note{margin:8px 14px;max-width:70ch}
 
+/* shell.py gives .n b the success colour; a short SAFE count or a negative row delta is
+   not success, so those are marked with <i> instead. */
+.n i{color:var(--rust);font-style:normal;font-weight:600}
 .what code{font-family:var(--mono);color:var(--ink)}
 .ok{color:var(--moss);font-weight:600;flex:none}.bad{color:var(--rust);font-weight:600;flex:none}
 .dim{color:var(--faint)}
@@ -404,10 +426,16 @@ JS = ""
 def render():
     stage = core.course_stage()
     if stage:
-        stage_line = f"App at Round {stage} of 5 — {html.escape(core.ROUND_TITLE[stage])}"
+        # "as built through", not "at": between a round's demo and the next round's
+        # build the learner has moved on while the app has not, and a bare "Round N"
+        # then contradicts the tutor's own round tag by two whole phases.
+        stage_line = (f"App as built through Round {stage} of 5 — "
+                      f"{html.escape(core.ROUND_TITLE[stage])}")
     else:
         stage_line = ("App at the Round-0 baseline — a bare LLM call. "
                       "Each round's build fills this page in.")
+    if core.src_dirty():
+        stage_line += " · src/snackbot.py has uncommitted edits"
     return f"""<header>
   <h1>A guide to what you've built</h1>
   <p class="sub">What you have built so far: how it works, what its memory holds, and
