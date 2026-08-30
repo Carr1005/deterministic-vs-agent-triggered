@@ -204,7 +204,8 @@ pre .dl.meta{color:var(--code-dim)}
    is the trade the sticky bar costs: :has() is in every current browser (Chrome 105,
    Safari 15.4, Firefox 121), and where it is missing the page simply stays unified. */
 :root{--sub-h:52px}
-.bar-sub{top:var(--bar-top-h);height:var(--sub-h);z-index:20;gap:8px}
+.bar-sub{top:var(--bar-top-h);height:var(--sub-h);z-index:20;gap:8px;
+  justify-content:flex-end}
 input[name="v"]{position:absolute;opacity:0;pointer-events:none}
 label[for^="v-"]{display:inline-flex;align-items:center;gap:7px;padding:6px 15px;
   cursor:pointer;border-radius:999px;user-select:none;
