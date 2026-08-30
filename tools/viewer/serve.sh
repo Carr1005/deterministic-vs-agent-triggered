@@ -26,7 +26,9 @@ TOKEN="snackbot-viewer-ok"
 # tokens we no longer mint, so without this list `--ensure` would mistake our own old
 # process for a stranger, step aside to 4001, and leave :4000 serving the old tab-less
 # page at the URL everyone already has. Deletable once a release has shipped.
-LEGACY_TOKENS="snackbot-diffview-ok snackbot-appview-ok"
+# Bare "snackbot-viewer-ok" is here too: it is what our own server replied before the
+# health check began naming its repository.
+LEGACY_TOKENS="snackbot-diffview-ok snackbot-appview-ok snackbot-viewer-ok"
 LEGACY_PORTS="4000 4001 4002 4003 4004 4005 5050 5051 5052 5053 5054 5055 5000"
 
 usage() {
@@ -65,7 +67,9 @@ except Exception:
 PYEOF
 }
 
-ours()   { [ "$(probe "$1")" = "$TOKEN" ]; }
+# Ours means this token AND this repository: a trial clone or a replay sandbox running
+# beside the original must not adopt its viewer and serve the wrong tree.
+ours()   { [ "$(probe "$1")" = "$TOKEN $(pwd -P)" ]; }
 
 legacy() {
   local body; body="$(probe "$1")"

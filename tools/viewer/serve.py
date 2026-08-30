@@ -101,7 +101,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
         if path == "/healthz":
             self.server.last_seen = time.time()
-            return self._send(200, HEALTH_TOKEN, TEXT)
+            # The repo path is part of the identity, not decoration: two checkouts of
+            # this course — a trial clone beside the original, a replay sandbox — would
+            # otherwise recognise each other's viewer as their own, and `--ensure` would
+            # hand the learner a URL serving the wrong repository.
+            return self._send(200, f"{HEALTH_TOKEN} {core.REPO}", TEXT)
 
         if path.startswith("/state/"):
             # A poll counts as activity only when the page says it is actually on screen.
