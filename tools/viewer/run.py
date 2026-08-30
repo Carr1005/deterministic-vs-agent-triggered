@@ -79,6 +79,7 @@ def main():
         "ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "argv": sys.argv[1:],
         "stage": core.course_stage(),
+        "src_dirty": core.src_dirty(),
         "exit": rc,
         "ms": round((time.perf_counter() - start) * 1000),
         "output": output,

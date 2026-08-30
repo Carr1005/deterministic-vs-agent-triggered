@@ -108,6 +108,17 @@ def course_stage():
     return max((n for (n, phase) in course_commits() if phase == "build"), default=0)
 
 
+def src_dirty():
+    """Has src/snackbot.py been edited since the last build commit?
+
+    During BUILD the app is written before it is committed, so `course_stage()` alone
+    would describe a run made in that window as coming from the *previous* round's build
+    — a card reading R0 beside output only R1's code can produce. This says when the
+    stage is a floor rather than the whole truth.
+    """
+    return bool(git("status", "--porcelain", "--", "src/snackbot.py").strip())
+
+
 def db_path():
     p = Path(os.getenv("SNACKBOT_DB", "memory.db"))
     return p if p.is_absolute() else REPO / p

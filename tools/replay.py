@@ -90,16 +90,25 @@ def clause_blocks(questions_md):
 
 
 def answer_blocks(questions_md):
-    """The model answer / verdict / gate-criteria bodies, in document order."""
+    """The model answer / verdict / gate-criteria bodies, in document order.
+
+    Stops at the NAMED next marker rather than at any bold line. An earlier version
+    stopped on the bare prefix `**`, which silently discarded every body that opens in
+    bold — round 2's "**Every turn, unconditionally** — …" and all six of round 5's
+    "**Q5.1 read_user_facts → deterministic.** …" verdicts, leaving round 5 with one
+    block for eight slots and the gate criteria pasted into all of them.
+    """
     starts = ("**Model answer:**", "**Verdict (model answer):**", "**Gate criteria:**")
-    stops = ("**", "*Reveal", "## ", "---")
+    stops = ("**Model answer:", "**Verdict (model answer):", "**Gate criteria:",
+             "**Accept if:", "**On accept", "**Reveal:", "**Clause template",
+             "*Reveal", "## ", "---", "> ")
     out, lines = [], questions_md.splitlines()
     for i, ln in enumerate(lines):
         if ln.strip() not in starts:
             continue
         body = []
         for nxt in lines[i + 1:]:
-            if nxt.startswith(stops) or nxt.startswith("> "):
+            if nxt.startswith(stops):
                 break
             body.append(nxt)
         text = "\n".join(body).strip()
@@ -332,7 +341,8 @@ def resume_line(dest):
             break
     dirty = [l for l in git(dest, "status", "--porcelain").splitlines() if l.strip()]
     if not last:
-        return "Round 1 TUTOR, first question (no course commit yet)"
+        return ("Round 1 TUTOR, resuming mid-round (answers.md is modified)" if dirty
+                else "Round 1 TUTOR, first question (no course commit yet)")
     n, phase = int(last.split()[0][-1]), last.split()[1]
     if phase == "demo":
         nxt = f"Round {n + 1} TUTOR" if n < 5 else "DONE — round-5 demo is the last phase"
@@ -374,6 +384,15 @@ def main():
             raise SystemExit('FAIL  --through wants e.g. "round-4 spec"')
         upto_round, upto_phase = int(m.group(1)), m.group(2)
         label = f"r{upto_round}-{upto_phase}"
+
+    if a.mid_tutor and upto_phase != "demo":
+        # Only a round that has not started yet has an untouched answers.md to dirty.
+        # Past its tutor commit every placeholder is already filled, so the substitution
+        # below would match nothing and leave a clean tree while claiming otherwise —
+        # and a modified answers.md after `round-N spec` is not a state PROTOCOL.md's
+        # resume table has a row for; it would trip the reconciliation rule instead.
+        raise SystemExit("FAIL  --mid-tutor needs a round that has not started: use "
+                         "--round N, or --through \"round-N demo\".")
 
     tmp = Path(os.environ.get("TMPDIR", "/tmp"))
     dest = guard(Path(a.dir) if a.dir else tmp / f"snackbot-replay-{label}")

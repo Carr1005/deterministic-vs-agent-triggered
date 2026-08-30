@@ -191,6 +191,13 @@ def db_tables_html():
         conn = core.db_connect()
     except sqlite3.Error as e:
         return _card(f"could not open memory.db read-only: {html.escape(str(e))}")
+    if conn is None:
+        # The file existed a moment ago and does not now — a reset, or a sandbox being
+        # deleted underneath us. Without this guard the first `conn.execute` raises
+        # AttributeError, which the sqlite3.Error handler below cannot catch, and the
+        # `finally` raises a second one that hides the first.
+        return _card("memory.db is no longer there &mdash; it was removed while this "
+                     "page was being built. Reload to try again.")
     try:
         out = []
         # Turns in full — this is the memory the deterministic read feeds to the model.
@@ -222,7 +229,8 @@ def db_tables_html():
         size = db.stat().st_size / 1024
         out.append(f'<p class="state">file: {html.escape(str(db.name))} ({size:.0f} KB on disk)</p>')
         return "".join(out)
-    except sqlite3.Error as e:
+    except (sqlite3.Error, OSError) as e:
+        # OSError too: db.stat() for the on-disk size is inside this block.
         return _card(f"memory.db could not be read: {html.escape(str(e))}")
     finally:
         conn.close()
@@ -280,7 +288,7 @@ def _meter_chips(output):
     return chips
 
 
-def run_log_html(current):
+def run_log_html():
     records = read_records()
     if not records:
         return _card("No runs yet &mdash; when you ask your tutor to run the app for "
@@ -304,8 +312,12 @@ def run_log_html(current):
                     delta += f'<span class="n"><b>Δ {t} {d:+d}</b></span>'
         if isinstance(rows, dict):
             prev_rows = rows
-        note = (' <span class="dim">(from an earlier session)</span>'
-                if isinstance(stage, int) and stage > current else "")
+        # The badge answers "which build printed this?", so it says `app R3`, never a
+        # bare `R3` — a bare number reads as the round the learner is in, which it is
+        # not: during round 1's TUTOR phase the app is still the R0 baseline, because
+        # the build lands two phases later. `edited` covers the BUILD window, where the
+        # code has changed but the commit has not happened yet.
+        built = f"app R{stage}" + (" · edited" if r.get("src_dirty") else "")
         trunc = ('<p class="note">output truncated for the log; the terminal showed '
                  'all of it.</p>' if r.get("truncated") else "")
         newest = i == len(records) - 1
@@ -313,9 +325,10 @@ def run_log_html(current):
         rid = re.sub(r"[^0-9A-Za-z]", "", str(r.get("ts", ""))) or str(i)
         cards.append(
             f'<details class="d" id="run-{rid}"{" open" if newest else ""}>'
-            f'<summary><span class="file">R{stage}</span>'
+            f'<summary><span class="file" title="the build of src/snackbot.py that '
+            f'printed this">{built}</span>'
             f'<span class="what"><code>{html.escape(argv)}</code> · '
-            f'{html.escape(str(r.get("ts", "")))}{note}</span>'
+            f'{html.escape(str(r.get("ts", "")))}</span>'
             f'{chips}{delta}{badge}</summary>'
             f'<pre class="uni">{output_html(r.get("output", "").rstrip())}</pre>{trunc}'
             f'</details>')
@@ -407,4 +420,4 @@ def render():
 <h2>What the memory holds</h2>
 {db_tables_html()}
 <h2>Runs your tutor made for you</h2>
-{run_log_html(stage)}"""
+{run_log_html()}"""
