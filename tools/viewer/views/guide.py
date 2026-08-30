@@ -237,6 +237,67 @@ def db_tables_html():
         conn.close()
 
 
+# ---------------------------------------------------------------- the file map ------
+# What each file is FOR, not what state it is in. A role holds in every round, so these
+# never go stale — and the diagram below already shows the app's current shape, which is
+# the job a state description would have been doing twice.
+#                 path,                     role,                                  size
+FILES = (
+    ("dir",  "src/", ""),
+    ("you",  "src/snackbot.py",       "the conversation itself &mdash; the one file "
+                                      "you change, every round"),
+    ("file", "src/meter.py",          "measures every turn: tokens, cost, latency"),
+    ("file", "src/seed_memory.py",    "builds the starting database; ran once, at setup"),
+    ("dir",  "spec/", ""),
+    ("file", "spec/spec.md",          "the requirements you argue into existence, "
+                                      "round by round"),
+    ("dir",  "setup/", ""),
+    ("file", "setup/show_memory.py",  "prints what the memory holds right now"),
+    ("file", "setup/reset_memory.py", "restores the original seeded database"),
+    # at the repo root, so it is not indented under the directory above it
+    ("root", "memory.db",             "the memory &mdash; where turns and facts are "
+                                      "stored"),
+)
+
+
+def _lines(rel):
+    try:
+        return f"{sum(1 for _ in (core.REPO / rel).open('rb')):,} lines"
+    except OSError:
+        return "missing"
+
+
+def _size(kind, rel):
+    """The one fact per row worth reading off disk — everything else here is fixed."""
+    if kind == "root":
+        rows = core.db_counts()
+        return " · ".join(str(rows[t]) for t in core.TABLES) + " rows" if rows \
+            else "not created yet"
+    if rel.endswith("spec.md"):
+        n = sum(len(spec_clauses(i)) for i in range(1, 6))
+        return f"{n} clause{'' if n == 1 else 's'}" if n else "still empty"
+    return _lines(rel)
+
+
+def file_tree_html():
+    rows = []
+    for kind, rel, role in FILES:
+        if kind == "dir":
+            rows.append(f'<div class="fdir">{html.escape(rel)}</div>')
+            continue
+        name = rel.rsplit("/", 1)[-1] if "/" in rel else rel
+        cls = {"you": "frow yours", "root": "frow root"}.get(kind, "frow")
+        rows.append(f'<div class="{cls}">'
+                    f'<span class="fname">{html.escape(name)}</span>'
+                    f'<span class="fsize">{html.escape(_size(kind, rel))}</span>'
+                    f'<span class="farrow" aria-hidden="true">&rarr;</span>'
+                    f'<span class="frole">{role}</span></div>')
+    return (f'<div class="ftree">{"".join(rows)}</div>'
+            '<p class="note">Ask your tutor to run any of these and the output lands '
+            'under that round&rsquo;s <em>Runs</em>. What you run in your own terminal '
+            'stays yours.</p>')
+
+
 # ---------------------------------------------------------------- the spec ----------
 def _md(text):
     """The inline markdown a clause actually uses, and nothing else.
@@ -467,6 +528,35 @@ ol.spec code{font-family:var(--mono);font-size:.88em;background:var(--base-200);
   border-radius:4px;padding:1px 5px}
 ol.spec em{color:var(--base-content-secondary);font-style:italic}
 
+/* The file map. A four-column grid so names, sizes and roles line up down the page;
+   below 620px the role drops to its own line rather than squeezing to two words. */
+.ftree{margin:14px 0 0;border:1px solid var(--base-300);background:var(--base-100);
+  border-radius:12px;padding:14px 16px;font-family:var(--mono);
+  font-size:var(--fs-small);display:grid;
+  grid-template-columns:auto auto auto 1fr;align-items:baseline;gap:2px 0}
+.fdir{grid-column:1/-1;color:var(--base-content-secondary);margin-top:8px}
+.fdir:first-child{margin-top:0}
+.frow{grid-column:1/-1;display:grid;grid-template-columns:subgrid;
+  padding:3px 0;border-radius:6px}
+.frow.root{margin-top:8px}
+.frow.root .fname{padding-left:0}
+.fname{color:var(--base-content);font-weight:650;padding-left:18px;
+  padding-right:16px;white-space:nowrap}
+.fsize{color:var(--base-content-secondary);font-variant-numeric:tabular-nums;
+  white-space:nowrap;padding-right:14px}
+.farrow{color:var(--base-content-secondary);padding-right:10px}
+.frole{color:var(--base-content-secondary);font-family:var(--sans);line-height:1.5}
+/* the one file the learner edits, marked so the map answers "which part is mine" */
+.frow.yours .fname{color:var(--accent-ink)}
+.frow.yours .frole{color:var(--base-content)}
+@media (max-width:619px){
+  .ftree{display:block}
+  .frow{display:block;padding:6px 0}
+  .fname{padding-left:14px}
+  .farrow{display:none}
+  .frole{display:block;padding-left:14px;margin-top:2px}
+}
+
 .howto{margin:14px 0 0;max-width:74ch}
 .howto p{margin:0 0 12px;color:var(--base-content-secondary);font-size:15px}
 .howto dl{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;margin:0;
@@ -606,8 +696,8 @@ def render():
 </header>
 <div class="bar bar-sub">{shell.subtab_nav([(i, l, f"#{i}") for i, l in ROUND_ANCHORS], active=f"r{here}")}</div>
 <section id="overview">
-<h2>How to work with the app</h2>
-{HOW_TO}
+<h2>What the app is made of</h2>
+{file_tree_html()}
 <h2>What the memory holds</h2>
 {db_tables_html()}
 {f'<h2>Earlier runs</h2>{orphans}' if orphans else ''}
