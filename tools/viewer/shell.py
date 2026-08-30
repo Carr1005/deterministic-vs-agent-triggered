@@ -60,7 +60,12 @@ CSS = r"""
      real step up from the 12.5px this page used to serve. */
   --fs-code:14px;   --lh-code:1.62;
   --fs-body:16px;   --fs-small:13.5px;   --fs-label:15px;
-  --wrap:1100px;
+  --wrap:1100px;    --gutter:16px;
+
+  /* Sticky bar heights, declared rather than measured: the secondary bar parks exactly
+     below the primary one, and an anchored target clears both. A view with a secondary
+     bar sets --sub-h from its own stylesheet; the guide has none, so it stays 0. */
+  --bar-top-h:60px; --sub-h:0px;
 }
 
 /* ---------------------------------------------------------------- shell ----------
@@ -71,8 +76,23 @@ html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--base-150);color:var(--base-content);
   font-family:var(--sans);font-size:var(--fs-body);line-height:1.6;
   -webkit-font-smoothing:antialiased}
-.wrap{max-width:var(--wrap);margin:0 auto;padding:0 16px 72px}
-@media (min-width:700px){ .wrap{padding:0 28px 88px} }
+.wrap{max-width:var(--wrap);margin:0 auto;padding:0 var(--gutter) 72px}
+@media (min-width:700px){ :root{--gutter:28px} .wrap{padding-bottom:88px} }
+
+/* A URL anchor scrolls its target to the very top, which is precisely where the sticky
+   bars are — so every anchorable thing reserves their height. Without this, a deep link
+   from the tutor lands with the card it named hidden behind the tabs. */
+.round,details.d{scroll-margin-top:calc(var(--bar-top-h) + var(--sub-h) + 14px)}
+
+/* The bars are full-bleed: they cancel the wrap's gutter so nothing scrolls through the
+   margins beside a rounded pill. */
+.bar{position:sticky;z-index:30;display:flex;align-items:center;
+  margin:0 calc(var(--gutter) * -1);padding:0 var(--gutter);
+  background:var(--base-150);border-bottom:1px solid var(--base-300)}
+.bar-top{top:0;height:var(--bar-top-h)}
+/* the pill is a flex child now, so it must be told to fill the bar — otherwise it
+   collapses to its own content and the full-width tabs stop being full width */
+.bar-top>nav.tabs{flex:1 1 auto;min-width:0}
 @media (min-width:1500px){ :root{--wrap:1320px} }
 
 /* ---------------------------------------------------------------- tabs -----------
@@ -80,9 +100,9 @@ body{margin:0;background:var(--base-150);color:var(--base-content);
    Full-width halves in portrait, content-width on wider screens so it does not stretch
    into a banner. `.subtabs` is the same component one step quieter — the guide page's
    secondary navigation drops straight into it. */
-nav.tabs{display:flex;gap:4px;margin:18px 0 0;padding:4px;
+nav.tabs{display:flex;gap:4px;padding:4px;
   background:var(--base-200);border:1px solid var(--base-300);border-radius:999px}
-@media (min-width:1200px){ nav.tabs{display:inline-flex} }
+@media (min-width:1200px){ .bar-top>nav.tabs{flex:0 0 auto;display:inline-flex} }
 nav.tabs a{flex:1 1 0;display:inline-flex;align-items:center;justify-content:center;
   gap:9px;padding:10px 20px;border-radius:999px;text-decoration:none;
   font-size:var(--fs-label);font-weight:600;color:var(--base-content-secondary);
@@ -230,8 +250,9 @@ POLL_JS = """
       // cadence. Restarting the server takes a second or two, and a warning that flashes
       // during an ordinary restart costs more trust than one that arrives late.
       if (++fails === 10) {
-        note = document.querySelector("nav.tabs")
-          .insertAdjacentElement("afterend", document.createElement("div"));
+        var anchor = document.querySelector(".bar-top") ||
+                     document.querySelector("nav.tabs");
+        note = anchor.insertAdjacentElement("afterend", document.createElement("div"));
         note.className = "notice";
         note.textContent = "The viewer has stopped, so this page is no longer updating.";
       }
@@ -321,7 +342,7 @@ def page(view, views, body, signature):
 <title>{html.escape(view.TITLE)}</title>
 <style>{CSS}{view.CSS}</style></head><body>
 <div class="wrap">
-{tab_nav(view.ID, views)}
+<div class="bar bar-top">{tab_nav(view.ID, views)}</div>
 {body}
 <footer>{view.FOOTER}</footer>
 </div>

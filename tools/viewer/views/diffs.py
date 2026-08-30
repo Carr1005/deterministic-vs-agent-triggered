@@ -195,32 +195,39 @@ pre .dl.hunk{color:var(--warning);
 pre .dl.meta{color:var(--code-dim)}
 
 /* View toggle — the `.subtabs` component from shell.py, one step quieter than the
-   top-level tabs so two segmented controls never compete. The inputs must stay direct
-   siblings of .rounds for the sibling combinator below to reach the diffs, so they are
-   not wrapped in a container — and shell.py splices this fragment in unwrapped for the
-   same reason. */
+   top-level tabs so two segmented controls never compete. It is a sticky secondary bar
+   parked directly under the primary one, so a deep link into a late round still arrives
+   with both levels of navigation on screen.
+
+   Wrapping the radios in that bar ends their sibling relationship with .rounds, so the
+   toggle is driven by :has() on the root instead of `#v-split:checked ~ .rounds`. That
+   is the trade the sticky bar costs: :has() is in every current browser (Chrome 105,
+   Safari 15.4, Firefox 121), and where it is missing the page simply stays unified. */
+:root{--sub-h:52px}
+.bar-sub{top:var(--bar-top-h);height:var(--sub-h);z-index:20;gap:8px}
 input[name="v"]{position:absolute;opacity:0;pointer-events:none}
 label[for^="v-"]{display:inline-flex;align-items:center;gap:7px;padding:6px 15px;
-  margin:20px 0 0;cursor:pointer;border-radius:999px;user-select:none;
+  cursor:pointer;border-radius:999px;user-select:none;
   color:var(--base-content-secondary);background:var(--base-200);
   border:1px solid transparent;font-family:var(--mono);font-size:var(--fs-small);
   font-weight:600}
-label[for="v-split"]{margin-left:6px}
 label[for^="v-"]:hover{color:var(--base-content)}
-input[name="v"]:checked+label{background:var(--tab-fill);color:var(--base-content);
-  border-color:var(--tab-edge)}
+html:has(#v-uni:checked) label[for="v-uni"],
+html:has(#v-split:checked) label[for="v-split"]{background:var(--tab-fill);
+  color:var(--base-content);border-color:var(--tab-edge)}
 input[name="v"]:focus-visible+label{outline:2px solid var(--accent);outline-offset:2px}
 table.sbs{display:none}
-#v-split:checked~.rounds pre.uni{display:none}
-#v-split:checked~.rounds table.sbs{display:table}
+html:has(#v-split:checked) .rounds pre.uni{display:none}
+html:has(#v-split:checked) .rounds table.sbs{display:table}
 
 /* Portrait: two columns of code in a phone-width column is unreadable, so side by side
-   is a wide-viewport affordance. The control is hidden and unified always wins — the
-   radio keeps its state, so rotating to landscape restores the choice untouched. */
+   is a wide-viewport affordance. The whole bar goes, and --sub-h with it so an anchored
+   target does not reserve room for a bar that is not there. */
 @media (max-width:699px){
-  label[for^="v-"]{display:none}
-  #v-split:checked~.rounds pre.uni{display:block}
-  #v-split:checked~.rounds table.sbs{display:none}
+  :root{--sub-h:0px}
+  .bar-sub{display:none}
+  html:has(#v-split:checked) .rounds pre.uni{display:block}
+  html:has(#v-split:checked) .rounds table.sbs{display:none}
 }
 
 /* Side-by-side. Sits on the same dark panel as the unified view, so the washes are
@@ -313,8 +320,10 @@ def render():
   commit. Earlier rounds stay here; you can come back to Round 2 from Round 5.</p>
   {state}
 </header>
+<div class="bar bar-sub">
 <input type="radio" name="v" id="v-uni" checked><label for="v-uni">Unified</label>
 <input type="radio" name="v" id="v-split"><label for="v-split">Side by side</label>
+</div>
 <div class="rounds">
 {"".join(body)}
 </div>"""
