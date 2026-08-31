@@ -5,7 +5,7 @@
 "start the course". This page is for doing it by hand, or for debugging when something
 went wrong.
 
-The course runs against a **real LLM** (OpenAI `gpt-5-mini` plus embeddings) and a
+The course runs against a **real LLM** (OpenAI `gpt-5.6-luna` plus embeddings) and a
 **real database** — but the database is a single SQLite file that ships already seeded.
 No Docker, no database server, no local model download. Two pip packages.
 
