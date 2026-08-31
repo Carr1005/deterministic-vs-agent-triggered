@@ -47,13 +47,16 @@ STAGED = {
     "meter":   (1, None, None),
     "detfns":  (2, None, None),
     "tools":   (3, None, None),
+    "semsearch": (3, None, None),
     "embed":   (3, None, None),
     "x5":      (4, None, None),
     "e_meter": (1, None, None),
     "e_read":  (2, 3, 5),          # the star of the course
     "e_write": (2, None, None),
+    "e_sem":   (3, None, None),
     "e_tools": (3, None, None),
     "e_embed": (3, None, None),
+    "e_back":  (3, None, None),
 }
 
 
@@ -74,98 +77,336 @@ def _on(stage, key):
     return state(stage, *STAGED[key]) in ("active", "restored")
 
 
-def _box(x, y, w, h, lines, cls):
-    txt = "".join(
-        f'<text x="{x + w / 2:.0f}" y="{y + 17 + i * 15}" text-anchor="middle">{html.escape(s)}</text>'
-        for i, s in enumerate(lines))
-    return f'<g class="node {cls}"><rect x="{x}" y="{y}" width="{w}" height="{h}" rx="3"/>{txt}</g>'
+# ---- geometry ------------------------------------------------------------------------
+# Three columns, not four. That is the whole reason the previous layout tangled: four
+# columns of boxes left ~48px between them, and a label like "the model decides" is 111px
+# wide, so every label landed on top of whatever was already there. Three columns leave a
+# 130px and a 120px gap — room for the widest label with margin to spare.
+#
+#   PAD | left 124 |  gap 130  | app 190 |  gap 120  | right 200 | PAD
+#
+# Widths are per column, not per card, so cards line up. Text has to fit: a mono glyph
+# advances 0.6em, so a title costs len·7.2 + 18px of padding and a subtitle len·6.3 + 18.
+# The layout harness re-checks every string against its box at every stage — see
+# scratchpad/test_layout.py. Height is kept tight because the SVG scales to fit its
+# column: a shorter canvas renders larger.
+CANVAS_W, CANVAS_H = 780, 440
+PAD = 8
+
+# Nodes are neutral; only their fill says what kind of thing they are, so colour is left
+# free to mean what TRAVELS (see EDGES). One border, one radius, one padding, title at the
+# top-left of every card — the terminal, the API and a table are the same component with
+# different contents, and should not look like three unrelated widgets.
+#
+# meter.py sits in the left column, NOT inside the src/snackbot.py frame: it is a separate
+# file, and what it prints goes to the terminal it now sits under.
+#      id            x    y    w    h   kind       title                    subtitle
+NODES = {
+    "term":    (  8, 120, 124,  62, "surface", "your terminal",        "you \u2192 / bot \u2190"),
+    "meter":   (  8, 216, 124,  58, "code",    "meter.py",             "prints [meter]"),
+    "app":     (262,  34, 190, 314, "frame",   "src/snackbot.py",      ""),
+    "x5":      (274,  62, 166,  44, "code",    "--x5 \u00b7 run_n()",      "5 runs, count SAFE"),
+    "detfns":  (274, 118, 166,  44, "code",    "read_user_facts()",    "save_turn()"),
+    "tools":   (274, 174, 166,  44, "code",    "search_memory()",      "search_knowledge_base()"),
+    # Both tools are one function underneath, and that function is where the sequence
+    # lives: embed the query through the API, read the WHOLE table back, rank the rows
+    # here in Python. Drawn as a card because a reader cannot otherwise tell why one
+    # embeddings box serves two searches — or that the database does no searching at all.
+    "semsearch":(274, 258, 166,  62, "code",   "semantic_search()",    "embed \u2192 read \u2192 rank"),
+    "llm":     (572,  34, 200,  48, "service", "chat completions",     "gpt-5-mini"),
+    "db":      (572, 110, 200, 180, "frame",   "memory.db",            ""),
+    # One line per table now that the column is wide enough to hold the whole name. The
+    # old CONVERSATIONAL_ / MEMORY split existed only to survive a 106px card.
+    "convo":   (584, 142, 176,  34, "store",   "CONVERSATIONAL_MEMORY", ""),
+    "vectors": (584, 190, 176,  34, "store",   "CONVERSATION_VECTORS",  ""),
+    "facts":   (584, 238, 176,  34, "store",   "SEMANTIC_MEMORY",       ""),
+    "embed":   (572, 352, 200,  52, "service", "embeddings",           "text-embedding-3-small"),
+}
+
+# channel  = what travels, and therefore the colour: api (blue) or memory (teal).
+# invoked  = who decides it runs, and therefore the line: "code" solid, "model" dashed.
+#            Dashed reads as conditional, which is what agent-triggered means — so the
+#            course's own distinction keeps a channel of its own rather than living only
+#            in the words.
+# A qualifier survives on exactly the two edges that carry the contrast — the pinned
+# every-turn read, and the moment a tool call actually happens. The legend already tells
+# the reader that a solid line means every turn, so repeating it on write and measure was
+# noise that cost the labels room they did not have. "the model decides" sits on e_sem
+# rather than on the table reads because that is where the decision takes effect;
+# everything downstream of it inherits the dashed line.
+#           key         from      to        verb          qualifier             channel  invoked
+EDGES = {
+    "e_in":   ("term",   "app",    "you type",    "",                    "plain", "code"),
+    "e_api":  ("app",    "llm",    "request",     "",                    "api",   "code"),
+    "e_out":  ("llm",    "app",    "response",    "",                    "api",   "code"),
+    "e_meter":("app",    "meter",  "measure",     "",                    "plain", "code"),
+    "e_read": ("detfns", "convo",  "read",        "every turn",          "mem",   "code"),
+    "e_write":("detfns", "convo",  "write",       "",                    "mem",   "code"),
+    # "read all rows", not "search": semantic_search() runs SELECT content, embedding
+    # FROM <table> with no WHERE, and cosine-ranks the result in Python. The query vector
+    # never reaches SQL, so calling this a search would tell the reader the database does
+    # matching it does not do — and would hide the cost the meter is there to measure.
+    "e_sem":  ("tools",  "semsearch","both call", "the model decides",   "plain", "model"),
+    "e_tools":("semsearch","vectors","read all rows", "",                "mem",   "model"),
+    "e_kb":   ("semsearch","facts",  "read all rows", "",                "mem",   "model"),
+    "e_embed":("semsearch","embed",  "embed query",   "",                "api",   "model"),
+    # An API call is drawn as a round trip, the way chat completions already is on this
+    # canvas - the returned value is the point. Here it is doubly so: the vector that comes
+    # back is what cosine() ranks the rows against, so without this arrow the card's
+    # "embed -> read -> rank" has a middle step with nowhere to happen. Memory operations
+    # keep a single arrow: "read" already implies rows coming back, and doubling those
+    # would bury the read/write distinction the whole course is about.
+    "e_back": ("embed",  "semsearch","the vector", "",                   "api",   "model"),
+}
+
+# Where each edge attaches, kept apart from what it means. A side midpoint was the bug:
+# on the 226px-tall app frame it put the API call halfway down the box and sent the line
+# diagonally across the canvas, crossing everything. An explicit y per end lets a line
+# leave at the height of the thing it is talking to, so edges run near-horizontal and
+# stop crossing. `t` is how far along the line the label sits — two parallel edges use
+# different values so their labels cannot collide.
+#            key        from side, y    to side, y     t
+ROUTE = {
+    "e_in":    (("r", 151), ("l", 151), 0.50),
+    "e_api":   (("r",  48), ("l",  48), 0.42),
+    "e_out":   (("l",  72), ("r",  72), 0.42),
+    "e_meter": (("l", 245), ("r", 245), 0.50),
+    "e_read":  (("r", 122), ("l", 144), 0.50),
+    "e_write": (("r", 158), ("l", 174), 0.50),
+    # The three edges leave semantic_search() at 270/285/298 and land at 207/252/342 —
+    # monotone in both, which is what makes crossing impossible rather than merely absent.
+    "e_sem":   (("b", 357), ("t", 357), 0.50),
+    "e_tools": (("r", 268), ("l", 200), 0.50),
+    "e_kb":    (("r", 286), ("l", 258), 0.50),
+    "e_embed": (("r", 296), ("l", 364), 0.50),
+    # The return lands on the card's BOTTOM edge, not its right. Run as a parallel pair
+    # the two lines stayed ~27px apart and each label covered both of them; leaving from
+    # one side and arriving at another makes them diverge, so each label masks its own.
+    "e_back":  (("l", 396), ("b", 400), 0.42),
+}
 
 
-def _edge(x1, y1, x2, y2, cls):
-    return f'<line class="edge {cls}" x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}"/>'
+def _node(nid, override=None):
+    x, y, w, h, kind, title, sub = NODES[nid]
+    if override:
+        title, sub = override
+    # A frame labels itself at the TOP - its middle belongs to the cards nested inside
+    # it. A card centres what it holds: two lines straddling the middle, one line on
+    # it. For the common 44px card these land at +19/+34, where they already were.
+    if kind == "frame":
+        ty = y + 19
+    elif sub:
+        ty = y + h / 2 - 3
+    else:
+        ty = y + h / 2 + 4
+    t = f'<text class="ttl" x="{x + 10}" y="{ty:.0f}">{html.escape(title)}</text>'
+    if sub:
+        t += f'<text class="sub" x="{x + 10}" y="{ty + 15:.0f}">{html.escape(sub)}</text>'
+    return (f'<g class="node {kind}">'
+            f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="8"/>{t}</g>')
 
 
-def _label(x, y, text, cls):
-    w = 12 + 5.3 * len(text)
-    return (f'<g class="chip {cls}"><rect x="{x - w / 2:.0f}" y="{y}" width="{w:.0f}" height="16" rx="8"/>'
-            f'<text x="{x:.0f}" y="{y + 11.5}" text-anchor="middle">{html.escape(text)}</text></g>')
+def _anchor(nid, side, at):
+    """A point on one side of a node, at an explicit y (for l/r) or x (for t/b)."""
+    x, y, w, h, *_ = NODES[nid]
+    return {"l": (x, at), "r": (x + w, at), "t": (at, y), "b": (at, y + h)}[side]
 
 
-def diagram_svg(stage, db_exists):
+def _arrow(a, b, key, mk=""):
+    """One edge: a directional line, and its verb sitting on the line rather than near it."""
+    _, _, verb, qual, channel, invoked = EDGES[key]
+    (sa, ya), (sb, yb), t = ROUTE[key]
+    x1, y1 = _anchor(a, sa, ya)
+    x2, y2 = _anchor(b, sb, yb)
+    cls = f"edge {channel}" + ("" if invoked == "code" else " model")
+    line = (f'<line class="{cls}" x1="{x1:.0f}" y1="{y1:.0f}" x2="{x2:.0f}" y2="{y2:.0f}" '
+            f'marker-end="url(#ar-{channel}{mk})"/>')
+    return line + _chip(x1 + (x2 - x1) * t, y1 + (y2 - y1) * t, verb, qual, channel)
+
+
+def _chip(cx, cy, verb, qual, channel):
+    """A label that masks the line it belongs to, and can never leave the canvas.
+
+    Sized from the text it actually holds: .v renders at 11px and .q at 9.5px, so the
+    advances are 6.6 and 5.7. The old formula used 5.6 for both and every chip was a few
+    pixels narrower than its own words.
+    """
+    w = max(14 + 6.6 * len(verb), 14 + 5.7 * len(qual) if qual else 0)
+    h = 26 if qual else 16
+    x = min(max(cx - w / 2, PAD), CANVAS_W - w - PAD)
+    y = cy - h / 2
+    t = f'<text class="v" x="{x + w / 2:.0f}" y="{y + (11 if qual else 11.5):.0f}">{html.escape(verb)}</text>'
+    if qual:
+        t += f'<text class="q" x="{x + w / 2:.0f}" y="{y + 22:.0f}">{html.escape(qual)}</text>'
+    return (f'<g class="chip {channel}">'
+            f'<rect x="{x:.0f}" y="{y:.0f}" width="{w:.0f}" height="{h}" rx="7"/>{t}</g>')
+
+
+def _markers(suffix):
+    """One arrowhead per channel, with ids unique to this panel.
+
+    The page draws six diagrams — five rounds plus the overview — and every one used to
+    define `ar-mem`/`ar-api`/`ar-plain`. Duplicate ids are invalid, and `url(#ar-mem)`
+    resolves to whichever comes FIRST in the document, so all six panels were quietly
+    borrowing the first panel's markers. It rendered right only because the definitions
+    were identical; the day one of them needs to differ, it would fail silently.
+    """
+    return "".join(
+        f'<marker id="ar-{k}{suffix}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" '
+        f'markerHeight="6" orient="auto-start-reverse" class="mk {k}">'
+        f'<path d="M0 0 L10 5 L0 10 z"/></marker>'
+        for k in ("plain", "api", "mem"))
+
+
+def diagram_svg(stage, db_exists, key=None):
+    # Markers are defined per panel and referenced by id, so each panel needs its own
+    # suffix; `arrow` closes over it rather than repeating it at ten call sites.
+    mk = f"-{key or stage}"
+
+    def arrow(a, b, k):
+        return _arrow(a, b, k, mk)
+
     on = {k: _on(stage, k) for k in STAGED}
     pinned = state(stage, *STAGED["e_read"]) == "restored"
-    parts = ['<svg viewBox="0 0 920 500" role="img" '
-             'aria-label="What the SnackBot app does right now">']
+    p = [f'<svg viewBox="0 0 {CANVAS_W} {CANVAS_H}" role="img" '
+         f'aria-label="What the SnackBot app does right now">',
+         f"<defs>{_markers(mk)}</defs>"]
 
-    # lane headers
-    for x, name in ((95, "your terminal"), (350, "src/snackbot.py"),
-                    (620, "OpenAI"), (830, "memory.db")):
-        parts.append(f'<text class="lane" x="{x}" y="38" text-anchor="middle">{name}</text>')
+    for nid in ("app", "db", "term", "llm", "convo", "vectors", "facts"):
+        p.append(_node(nid))
+    p.append(arrow("term", "app", "e_in"))
+    p.append(arrow("app", "llm", "e_api"))
+    p.append(arrow("llm", "app", "e_out"))
 
-    # always present: terminal, run_turn container, chat model, the shipped database
-    parts.append(_box(20, 200, 150, 120, ["you → …", "[tool] …",
-                                          "[meter] …", "bot ← …"], "active term"))
-    parts.append(f'<g class="node active frame"><rect x="230" y="70" width="240" height="380" rx="4"/>'
-                 f'<text x="350" y="92" text-anchor="middle">run_turn()</text></g>')
-    parts.append(_box(540, 70, 160, 56, ["chat completions", "gpt-5-mini"], "active"))
-    parts.append(f'<g class="node active frame"><rect x="760" y="90" width="140" height="340" rx="4"/>'
-                 f'<text x="830" y="112" text-anchor="middle">3 tables</text></g>')
-    parts.append(_box(770, 130, 120, 64, ["CONVERSATIONAL_", "MEMORY", "raw turns, per thread"], "active tbl"))
-    parts.append(_box(770, 230, 120, 56, ["CONVERSATION_", "VECTORS", "the turns, embedded"], "active tbl"))
-    parts.append(_box(770, 320, 120, 56, ["SEMANTIC_", "MEMORY", "the knowledge base"], "active tbl"))
-    parts.append(_edge(170, 245, 230, 245, "active"))
-    parts.append(_edge(470, 98, 540, 98, "active"))
-
-    # everything below exists only once its round's build commit does
     if on["x5"]:
-        parts.append(_box(245, 105, 210, 30, ["--x5 · run_n(): 5 runs, count SAFE"], "active"))
+        p.append(_node("x5"))
     if on["detfns"]:
-        names = (["read_user_facts()", "save_turn()"] if on["e_read"]
-                 else ["save_turn()"])
-        parts.append(_box(245, 160, 210, 52, names, "active"))
+        # The card lists what RUNS, not what is defined: Round 3 leaves read_user_facts()
+        # in the file but stops calling it every turn, so it drops off here until Round 5
+        # pins it back.
+        p.append(_node("detfns", None if on["e_read"] else ("save_turn()", "")))
     if on["tools"]:
-        parts.append(_box(245, 235, 210, 52, ["search_memory()",
-                                              "search_knowledge_base()"], "active"))
+        p.append(_node("tools"))
+    if on["semsearch"]:
+        p.append(_node("semsearch"))
+        p.append(arrow("tools", "semsearch", "e_sem"))
     if on["meter"]:
-        parts.append(_box(245, 380, 210, 48, ["meter.py", "prints the [meter] line"], "active"))
-        parts.append(_edge(350, 300, 350, 378, "active"))
-        parts.append(_label(350, 330, "every turn", "active"))
+        p.append(_node("meter"))
+        p.append(arrow("app", "meter", "e_meter"))
     if on["embed"]:
-        parts.append(_box(540, 380, 160, 48, ["embeddings API",
-                                              "text-embedding-3-small"], "active"))
+        p.append(_node("embed"))
     if on["e_read"]:
-        cls = "restored" if pinned else "active"
-        text = ("pinned — the ONE deterministic read" if pinned
-                else "deterministic read — every turn")
-        parts.append(_edge(455, 172, 770, 158, cls))
-        parts.append(_label(608, 138, text, cls))
+        p.append(arrow("detfns", "convo", "e_read"))
     if on["e_write"]:
-        parts.append(_edge(455, 196, 770, 182, "active"))
-        parts.append(_label(608, 202, "deterministic writes — every turn", "active"))
+        p.append(arrow("detfns", "convo", "e_write"))
     if on["e_tools"]:
-        parts.append(_edge(455, 250, 770, 256, "active"))
-        parts.append(_edge(455, 262, 770, 344, "active"))
-        parts.append(_label(608, 292, "agent-triggered — the model decides", "active"))
+        p.append(arrow("semsearch", "vectors", "e_tools"))
+        p.append(arrow("semsearch", "facts", "e_kb"))
     if on["e_embed"]:
-        parts.append(_edge(430, 287, 560, 380, "active"))
-        parts.append(_label(478, 344, "embed the query, cosine, top 3", "active"))
+        p.append(arrow("semsearch", "embed", "e_embed"))
+        p.append(arrow("embed", "semsearch", "e_back"))
 
-    # the round-1 lesson, on the diagram itself: a full database nobody reads
     if stage < 2:
-        text = ("full, but nothing reads it yet" if db_exists
-                else "created at setup (bash setup/bootstrap.sh)")
-        parts.append(_label(830, 442, text, "removed"))
+        # The round-1 lesson, on the diagram itself: a database that is full, and unread.
+        note = ("full — nothing reads it yet" if db_exists
+                else "created by bash setup/bootstrap.sh")
+        p.append(_chip(650, 418, note, "", "warn"))
 
-    parts.append("</svg>")
+    p.append("</svg>")
+    return "".join(p)
 
-    legend = (
-        '<details class="src"><summary>how to read this</summary>'
-        '<p class="note">Only what your app does right now is drawn — the diagram gains '
-        'a piece each time a round&rsquo;s build is committed. The database ships full '
-        'from the start; whether anything reads it is what the course is about. In '
-        'Round 3 the every-turn read disappears from here (the model decides instead); '
-        'in Round 5 it returns, pinned, in teal.</p></details>')
-    return f'<section class="panel">{"".join(parts)}{legend}</section>'
+
+# Just the key. What any of it MEANS is the tutor's job — a page that explains its own
+# diagram is doing Socratic work badly, and this one used to carry two paragraphs of it.
+LEGEND = (
+    '<div class="dlegend">'
+    '<span><i class="k-mem"></i>memory</span>'
+    '<span><i class="k-api"></i>API</span>'
+    '<span><i class="k-solid"></i>deterministic &mdash; code invokes, every turn</span>'
+    '<span><i class="k-dash"></i>agent-triggered &mdash; the model invokes</span>'
+    '</div>')
+
+
+# ---- what one turn does, in order ----------------------------------------------------
+# The question a box-and-arrow map is structurally unable to answer. Three properties of a
+# turn are invisible on the canvas: `chat completions` runs TWICE (before a search and
+# again with its results), the search is conditional, and the whole thing is a loop. A
+# reader left to infer order from box positions reconstructs the retrieve-then-generate
+# order — which is precisely the one Round 3 exists to overturn.
+#
+# Every step is gated by the SAME STAGED key the diagram uses, so the map and the list
+# cannot drift apart about what exists. `agent-triggered` is what makes a step conditional
+# — that is the course's own definition, not a rendering flag, so it is read off the tag.
+#         id        gate       call                        tag                target                                     channel
+TURN = (
+    ("read",  "e_read",  "read_user_facts()",         "deterministic",   "CONVERSATIONAL_MEMORY",                   "mem"),
+    ("write", "e_write", 'save_turn("user", \u2026)',      "deterministic",   "CONVERSATIONAL_MEMORY",                   "mem"),
+    ("llm",   "",        "chat completions",          "every turn",      "gpt-5-mini",                              "api"),
+    ("tools", "e_tools", "semantic_search()",         "agent-triggered", "embeddings, then every row of one table",  "mem"),
+    ("write", "e_write", 'save_turn("assistant", \u2026)', "deterministic",   "CONVERSATIONAL_MEMORY",                   "mem"),
+    # "your terminal" was wrong here: report() prints exactly one thing, the [meter] line.
+    # Naming the device instead of the output also contradicted the map, where this same
+    # step points at meter.py / "prints [meter]".
+    ("meter", "e_meter", "report(\u2026)",                "every turn",      "the [meter] line",                        "plain"),
+)
+
+
+def turn_html(stage, key=None):
+    """The order of one turn, as a numbered list the browser numbers itself.
+
+    Flat, deliberately: the conditional step is marked rather than nested, so the numbers
+    stay continuous however many steps a round happens to have. Its note names no step
+    number for the same reason — "back to the model" cannot go stale, "back to 3" can.
+    """
+    rows = []
+    for sid, gate, call, tag, target, channel in TURN:
+        if gate and not _on(stage, gate):
+            continue
+        cond = tag == "agent-triggered"
+        lead = ('<span class="tif">only if the model asks for a tool</span>'
+                if cond else "")
+        note = ('<span class="tnote">\u2026 then back to the model with the results, '
+                'up to 5&times;</span>') if cond else ""
+        # built outside the f-strings: 3.10 forbids backslashes inside an expression part
+        li_cls = ' class="cond"' if cond else ""
+        tag_cls = "agent" if cond else "det"
+        rows.append(
+            f'<li data-step="{sid}"{li_cls}>{lead}'
+            f'<code class="tcall">{html.escape(call)}</code>'
+            f'<span class="ttag {tag_cls}">{tag}</span>'
+            f'<span class="ttarget {channel}">&rarr; {html.escape(target)}</span>'
+            f'{note}</li>')
+    # The answer itself is not a step, because it is not inside the turn: run_turn()
+    # returns the reply and its caller prints it. Saying so is better than leaving a list
+    # of "one turn, in order" that never mentions where your answer comes from.
+    out = ('<p class="tout"><code>run_turn()</code> then returns the reply, and '
+           '<code>bot &larr; …</code> prints it. That happens after the turn, not '
+           'inside it &mdash; which is why it carries no number.</p>')
+    foot = ('<p class="tfoot"><code>--x5</code> runs this whole turn five times over and '
+            'counts how many of the replies are safe.</p>') if _on(stage, "x5") else ""
+    # Closed by default: the map answers "what is there" at a glance and should stay
+    # open, while the order is a question you go looking for. The id lets POLL_JS restore
+    # it across an auto-reload like every other disclosure on the page — and it must be
+    # UNIQUE, because the overview draws the current stage's panel a second time. Two
+    # elements with one id and getElementById silently restores only the first.
+    return (f'<details class="src turnbox" id="turn-{key or stage}">'
+            f'<summary>One turn, in order</summary>'
+            f'<ol class="turn">{"".join(rows)}</ol>{out}{foot}</details>')
+
+
+def app_panel(stage, db_exists, key=None):
+    """The map, its key, the order of a turn, and how to read all three.
+
+    Two views of one subject, so they share a panel: the diagram says what exists, the
+    list says what happens. Neither can do the other's job.
+
+    `key` distinguishes the overview's copy ("right now") from the round section's ("after
+    this round") in the DOM. The two are the same picture whenever they show the same
+    stage; the headings above them are what say why it appears twice.
+    """
+    return (f'<section class="panel">{diagram_svg(stage, db_exists, key)}'
+            f'{LEGEND}{turn_html(stage, key)}</section>')
+
 
 
 # ---------------------------------------------------------------- the database -------
@@ -173,10 +414,13 @@ def _card(text):
     return f'<p class="pending">{text}</p>'
 
 
-def _table_card(name, n, what, cols, body, open_=False):
+def _table_card(name, n, what, cols, body):
+    """One table, closed. The summary already carries the useful glance — which
+    tables exist, what each is for, how many rows it holds — and five turns of
+    conversation unrolled above the other two was more page than that is worth."""
     head = "".join(f"<th>{c}</th>" for c in cols)
     # stable id so the shell can reopen this card across an auto-reload
-    return (f'<details class="d" id="tbl-{name}"{" open" if open_ else ""}>'
+    return (f'<details class="d" id="tbl-{name}">'
             f'<summary><span class="file">{name}</span>'
             f'<span class="what">{what}</span><span class="n">{n} row(s)</span></summary>'
             f'<div class="tblwrap"><table class="db"><thead><tr>{head}</tr></thead>'
@@ -209,15 +453,23 @@ def db_tables_html():
             f"<td class='role'>{html.escape(r)}</td><td>{html.escape(c)}</td>"
             f"<td class='num'>{html.escape(ts or '')}</td></tr>"
             for i, t, r, c, ts in rows)
+        # These descriptions say what a table HOLDS and never who reads it. Naming
+        # `search_memory()` here told a Round-1 reader about code that will not exist for
+        # two more rounds — the same promising-the-future the diagram is built to avoid.
+        # The diagram is now the only place that shows who touches what, and it only ever
+        # draws reads that already exist. "message", not "turn": save_turn() runs twice a
+        # turn, so a row is one message, not an exchange.
         out.append(_table_card("CONVERSATIONAL_MEMORY", len(rows),
-                               "the stored turns — what the deterministic read returns",
-                               ("id", "thread", "role", "content", "ts"), body, open_=True))
+                               "every message, yours and the bot&rsquo;s",
+                               ("id", "thread", "role", "content", "ts"), body))
         # Embeddings are ~28 KB of JSON each; never fetch them whole. The preview is
         # enough to make "it's a list of floats" tangible.
+        # "a list of numbers" is the course's own gloss for an embedding — see the comment
+        # above EMBED_MODEL in the round-3 reference implementation.
         for table, what in (("CONVERSATION_VECTORS",
-                             "the turns above again, embedded for search — search_memory() reads here"),
+                             "the same messages, each as a list of numbers"),
                             ("SEMANTIC_MEMORY",
-                             "the knowledge base: pastry facts — search_knowledge_base() reads here")):
+                             "snack and allergen facts, each as a list of numbers")):
             rows = conn.execute(f"SELECT id, content, substr(embedding, 1, 48), "
                                 f"length(embedding) FROM {table} ORDER BY id").fetchall()
             body = "".join(
@@ -586,29 +838,98 @@ td.num{white-space:nowrap;color:var(--base-content-secondary);
 td.role{white-space:nowrap;color:var(--accent-ink);font-weight:650}
 td.vec{color:var(--base-content-secondary);max-width:340px;overflow-wrap:anywhere}
 
-/* The diagram panel. On a wide viewport it sits beside its own legend rather than
-   stacking, which is the one place this page can spend horizontal room usefully. */
+/* The diagram panel, in two steps rather than one.
+
+   Below 720px it goes full-bleed, which buys back the gutter on both sides — at 719px
+   that is 691px of drawing width, and a 780-wide canvas scaled to fit still renders its
+   12px type at 10.6px. So it scales, and nothing is cut off.
+
+   Only below 680px would that type drop under 10px. There the canvas stops shrinking and
+   the reader pans instead. Three columns made this possible: the four-column canvas had
+   to scroll from 719px down. */
 .panel{margin:16px 0 0;border:1px solid var(--base-300);background:var(--base-100);
-  border-radius:12px;padding:14px 14px 6px}
+  border-radius:12px;padding:14px 14px 10px}
 .panel svg{width:100%;height:auto;display:block}
-svg text{font-family:var(--mono);font-size:11px;fill:var(--base-content)}
-svg text.lane{font-size:12px;fill:var(--base-content-secondary);font-weight:650}
-svg .node rect{fill:var(--base-150);stroke:var(--base-content-secondary);
-  stroke-width:1.2}
-svg .node.frame rect{fill:none;stroke:var(--base-300)}
-svg .node.frame text{fill:var(--base-content-secondary)}
-svg .node.tbl rect{fill:var(--base-100);stroke:var(--accent)}
-svg .node.tbl text{font-size:9.5px}
-svg .term text{text-anchor:middle}
-svg .edge{stroke:var(--base-content-secondary);stroke-width:1.4}
+@media (max-width:719px){
+  .panel{margin-left:calc(var(--gutter) * -1);margin-right:calc(var(--gutter) * -1);
+    border-radius:0;border-left:0;border-right:0;overflow-x:auto}
+}
+@media (max-width:679px){
+  .panel svg{width:760px;max-width:none}
+}
+
+/* The turn list. Same two channels as the canvas, carried the same way: colour says what
+   travels (teal memory, blue API), and border style says who invokes it — solid for
+   deterministic, dashed for agent-triggered. The conditional step gets the dashed rule
+   down its left edge for the same reason its arrows are dashed on the map: it is the one
+   step that may not happen. */
+/* details.turnbox, not .turnbox: shell.py's `details.src` carries its own margin at the
+   same specificity, and a bare class would lose to it. */
+details.turnbox{margin:16px 0 2px;padding:14px 0 0;border-top:1px solid var(--base-300)}
+ol.turn{margin:11px 0 0;padding:0 0 0 24px;font-family:var(--mono)}
+ol.turn>li{margin:0 0 8px;padding:2px 0 2px 8px;font-size:13px;line-height:1.5;
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 14px;align-items:baseline}
+ol.turn>li::marker{color:var(--base-content-secondary);font-weight:650}
+ol.turn>li.cond{border-left:2px dashed var(--secondary);padding-left:10px;
+  margin-left:-2px;padding-top:4px;padding-bottom:4px}
+.tcall{font-weight:650;color:var(--base-content)}
+.tif,.tnote{grid-column:1/-1;font-size:11px;color:var(--base-content-secondary)}
+.tif{margin-bottom:2px;font-style:normal;color:var(--secondary)}
+.ttag{grid-column:2;justify-self:end;white-space:nowrap;font-size:10.5px;font-weight:600;
+  padding:1px 8px;border-radius:999px;border:1px solid var(--base-300);
+  color:var(--base-content-secondary)}
+.ttag.agent{border-style:dashed;border-color:var(--secondary);color:var(--secondary)}
+.ttarget{grid-column:1;color:var(--base-content-secondary)}
+.ttarget.mem{color:var(--secondary)}
+.ttarget.api{color:var(--accent)}
+.tout,.tfoot{margin:10px 0 0;font-size:12px;color:var(--base-content-secondary)}
+.tout code,.tfoot code{font-family:var(--mono);background:var(--base-200);padding:1px 5px;
+  border-radius:4px}
+@media (max-width:719px){
+  ol.turn>li{grid-template-columns:1fr}
+  .ttag{grid-column:1;justify-self:start;margin-top:2px}
+}
+
+/* ONE card rule. Every node has the same border, radius and title position; only the fill
+   says what kind of thing it is, which leaves colour free to mean what travels. */
+svg text{font-family:var(--mono);font-size:12px;fill:var(--base-content)}
+svg .node rect{fill:var(--base-100);stroke:var(--base-300);stroke-width:1.3}
+svg .node .ttl{font-weight:650}
+svg .node .sub{fill:var(--base-content-secondary);font-size:10.5px}
+svg .node.surface rect{fill:var(--base-200)}
+svg .node.frame rect{fill:none;stroke-dasharray:3 3}
+svg .node.frame .ttl{fill:var(--base-content-secondary);font-weight:600}
+svg .node.service rect{stroke:var(--accent)}
+svg .node.store rect{stroke:var(--secondary)}
+
+/* Colour = what travels. Line = who decides: solid means code invokes it every turn,
+   dashed means the model may or may not. Red is kept for warnings only. */
+svg .edge{stroke:var(--base-content-secondary);stroke-width:1.5;fill:none}
+svg .edge.api{stroke:var(--accent)}
+svg .edge.mem{stroke:var(--secondary)}
+svg .edge.model{stroke-dasharray:6 4}
+svg .mk path{fill:var(--base-content-secondary)}
+svg .mk.api path{fill:var(--accent)}
+svg .mk.mem path{fill:var(--secondary)}
+
+/* A verb sits ON its line, masking it, so it reads as belonging to that arrow. */
 svg .chip rect{fill:var(--base-100);stroke:var(--base-300)}
-svg .chip text{font-size:9.5px;fill:var(--base-content-secondary)}
-svg .chip.removed rect{stroke:var(--primary)}
-svg .chip.removed text{fill:var(--primary)}
-svg line.restored{stroke:var(--accent);stroke-width:2.2}
-svg .chip.restored rect{stroke:var(--accent)}
-svg .chip.restored text{fill:var(--accent);font-weight:650}
-svg .node.restored rect{stroke:var(--accent);stroke-width:2}
+svg .chip .v{font-size:11px;text-anchor:middle;font-weight:600}
+svg .chip .q{font-size:9.5px;text-anchor:middle;fill:var(--base-content-secondary)}
+svg .chip.api rect{stroke:var(--accent)}
+svg .chip.api .v{fill:var(--accent-ink)}
+svg .chip.mem rect{stroke:var(--secondary)}
+svg .chip.mem .v{fill:var(--secondary)}
+svg .chip.warn rect{stroke:var(--primary)}
+svg .chip.warn .v{fill:var(--danger-ink)}
+
+.dlegend{display:flex;flex-wrap:wrap;gap:6px 18px;margin:10px 2px 0;
+  font-family:var(--mono);font-size:11.5px;color:var(--base-content-secondary)}
+.dlegend span{display:inline-flex;align-items:center;gap:7px}
+.dlegend i{width:18px;height:0;border-top:2px solid var(--base-content-secondary)}
+.dlegend i.k-mem{border-color:var(--secondary)}
+.dlegend i.k-api{border-color:var(--accent)}
+.dlegend i.k-dash{border-top-style:dashed}
 """
 
 JS = ""
@@ -639,7 +960,7 @@ def round_section(n, commits, here, db_exists):
     if (n, "spec") in commits and spec_html(n):
         body += f'<h3>What you specified</h3>{spec_html(n)}'
     if built:
-        body += f'<h3>How the app worked after this round</h3>{diagram_svg(n, db_exists)}'
+        body += f'<h3>How the app worked after this round</h3>{app_panel(n, db_exists)}'
     runs = run_log_html(n, empty=False)
     if runs:
         body += f"<h3>Runs your tutor made</h3>{runs}"
@@ -667,6 +988,17 @@ def render():
     if core.src_dirty():
         stage_line += " · src/snackbot.py has uncommitted edits"
 
+    # The overview's third question, beside "what is it made of" and "what its memory
+    # holds" — and like those two it describes the app as it SHIPS, not as it stands today.
+    # Stage 0 deliberately, never course_stage(): every round section below is headed "how
+    # the app worked after this round", so the current build already has a home and drawing
+    # it here would only duplicate one of them. What was missing is the starting point they
+    # are all departures from.
+    base = ('<h2>What the app does before Round 1</h2>'
+            '<p class="note">One call to the model. Nothing read from memory, nothing '
+            'written to it &mdash; and the database is already full.</p>'
+            f'{app_panel(0, db_exists, key="base")}')
+
     rounds = "".join(round_section(n, commits, here, db_exists) for n in range(1, 6))
     orphans = run_log_html(None, empty=False)
     return f"""<header>
@@ -680,7 +1012,8 @@ def render():
 <section id="overview">
 <h2>What the app is made of</h2>
 {file_tree_html()}
-<h2>What the memory holds</h2>
+{base}
+<h2>What the memory holds right now</h2>
 {db_tables_html()}
 {f'<h2>Earlier runs</h2>{orphans}' if orphans else ''}
 </section>
