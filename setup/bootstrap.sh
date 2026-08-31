@@ -185,7 +185,7 @@ READY.
   2. Copy this line and send it as your first message:
 
      ┌────────────────────────────────────────────────┐
-     │  Read AGENTS.md and start the course.          │
+     │  Read COURSE.md and start the course.          │
      └────────────────────────────────────────────────┘
 
      Works in every coding agent. If the reply has no mode

@@ -22,7 +22,7 @@ Open your coding agent in that folder and say **"start the course."** Python 3.1
 an API key; a few cents for the whole thing.
 
 *No `[R1 · TUTOR]` tag in the first reply? The agent didn't load the course rules — say
-"Read AGENTS.md and start the course" instead. [Quickstart](#quickstart) has the details.*
+"Read COURSE.md and start the course" instead. [Quickstart](#quickstart) has the details.*
 
 ## The pedagogical pattern
 
@@ -119,23 +119,23 @@ always safe to re-run. Step by step: `setup/SETUP.md`. On Windows, use WSL.)
 **3 — Open your coding agent in this folder** — from that same terminal, so it inherits
 `OPENAI_API_KEY` — and say:
 
-> **Read AGENTS.md and start the course.**
+> **Read COURSE.md and start the course.**
 
-That line works in **any** agent, because it names only `AGENTS.md` — the vendor-neutral
-entry point that routes to all the course's rules. If the agent says the copy isn't set
+That line works in **any** agent, because it names only `COURSE.md` — the vendor-neutral
+file all the course's rules route from. If the agent says the copy isn't set
 up, let it run `setup/bootstrap.sh` for you.
 
-Plain `start the course` also works wherever the agent loads `AGENTS.md` by itself:
+Plain `start the course` also works wherever the agent loads the rules by itself:
 
-| agent | how it finds `AGENTS.md` |
+| agent | how it finds `COURSE.md` |
 |---|---|
-| Codex · Cursor · Cline · Windsurf · Zed · Copilot | automatically, no config |
-| Claude Code | `CLAUDE.md` in this repo is one line: `@AGENTS.md` |
-| Gemini CLI | `.gemini/settings.json` in this repo points it at `AGENTS.md` |
+| Codex · Cursor · Cline · Windsurf · Zed · Copilot | auto-read `AGENTS.md`, here a one-line pointer to `COURSE.md` |
+| Claude Code | `CLAUDE.md` in this repo is one line: `@COURSE.md` |
+| Gemini CLI | `.gemini/settings.json` in this repo points it at `COURSE.md` |
 | Aider | `.aider.conf.yml` in this repo does the same |
 | anything else | use the boot line above |
 
-Those three files contain **no rules** — only a pointer to `AGENTS.md`, which routes
+Those four files contain **no rules** — only a pointer to `COURSE.md`, which routes
 onward, so each behaviour is defined in exactly one place. If the first reply has no mode tag
 (`[R1 · TUTOR]`), the instructions didn't load: paste the boot line.
 
@@ -147,11 +147,12 @@ not in the chat — a new session, or a *different* coding agent, resumes from
 
 ```
 README.md            you are here (for humans)
-AGENTS.md            the orchestrator: identity, mode routing, boot sequence
+COURSE.md            the orchestrator: identity, mode routing, boot sequence
 course/TUTORING.md   how the tutor talks to the learner (TUTOR/SPEC/DEMO/EXPAND)
 course/BUILDING.md   the build phase and its rails (tutor-alone mode)
 course/AUTHORING.md  the question-writing standard (for curriculum authors)
-CLAUDE.md            one line: @AGENTS.md — a pointer, never a second rulebook
+AGENTS.md            the shim auto-read agents land on — a pointer to COURSE.md
+CLAUDE.md            one line: @COURSE.md — a pointer, never a second rulebook
 .gemini/, .aider.conf.yml   same idea for Gemini CLI and Aider
 course/PROTOCOL.md   the state machine: phases, commits, resume table
 course/demo-log.md   your recorded numbers, round by round

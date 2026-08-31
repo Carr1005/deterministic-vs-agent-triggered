@@ -5,7 +5,7 @@
 "start the course". This page is for doing it by hand, or for debugging when something
 went wrong.
 
-The course runs against a **real LLM** (OpenAI `gpt-5-mini` plus embeddings) and a
+The course runs against a **real LLM** (OpenAI `gpt-5.6-luna` plus embeddings) and a
 **real database** — but the database is a single SQLite file that ships already seeded.
 No Docker, no database server, no local model download. Two pip packages.
 
@@ -82,12 +82,13 @@ copy — run `bash setup/init.sh` once to create a repo. No API calls.
 
 Open your coding agent **in this folder** and say:
 
-> Read AGENTS.md and start the course.
+> Read COURSE.md and start the course.
 
-That line names only `AGENTS.md`, the vendor-neutral file all the rules live in, so it
-works in any agent. Where the agent loads `AGENTS.md` on its own — Codex, Cursor and
-friends directly; Claude Code, Gemini CLI and Aider via the one-line pointers committed
-here — plain `start the course` is enough. See the table in `README.md`.
+That line names only `COURSE.md`, the file all the rules live in, so it works in any
+agent. Where the agent loads the rules on its own — Codex, Cursor and friends via
+`AGENTS.md`, here a one-line pointer to `COURSE.md`; Claude Code, Gemini CLI and Aider
+via the one-line pointers committed here — plain `start the course` is enough. See the
+table in `README.md`.
 
 ## Troubleshooting
 

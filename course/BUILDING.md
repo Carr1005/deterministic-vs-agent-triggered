@@ -1,7 +1,7 @@
 # BUILDING.md — the build phase, and its rails
 
 Engineer-owned, and **authoritative** for BUILD mode: the one-line summary in
-`AGENTS.md`'s mode table is a pointer to this file, not a second source. BUILD is the
+`COURSE.md`'s mode table is a pointer to this file, not a second source. BUILD is the
 one mode with no learner in the room — the tutor works alone here, and every rule below
 is mirrored by a mechanical check in `course/rounds/round-N/verify.sh`.
 

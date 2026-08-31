@@ -155,3 +155,14 @@ butter" and "sesame-crusted simit" name themselves and leave the KB decorative.
 - Infrastructure earns its place only if it makes the *concept* easier to see. The Oracle
   audit above is the worked example: real stack, zero conceptual contribution, high setup
   cost → replaced with the smallest thing that keeps the lesson honest.
+
+## 2026-08-31 — rulebook renamed `AGENTS.md` → `COURSE.md`
+
+The course now also deploys inside DeepLearning.AI's managed chat IDE, which writes its
+own environment rules to `/workspace/AGENTS.md` on every container boot — anything the
+course ships under that name is silently overwritten. The rulebook therefore moved to
+`COURSE.md` (a name no platform reserves) and `AGENTS.md` became one more thin pointer,
+joining `CLAUDE.md`, `.gemini/settings.json` and `.aider.conf.yml` — all of which now
+route to `COURSE.md` directly. Earlier entries in this log that say `AGENTS.md` describe
+the layout as it was then; they are left unrewritten. The universal boot line is now
+"Read COURSE.md and start the course."

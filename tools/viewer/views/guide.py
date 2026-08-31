@@ -113,7 +113,7 @@ NODES = {
     # here in Python. Drawn as a card because a reader cannot otherwise tell why one
     # embeddings box serves two searches — or that the database does no searching at all.
     "semsearch":(274, 258, 166,  62, "code",   "semantic_search()",    "embed \u2192 read \u2192 rank"),
-    "llm":     (572,  34, 200,  48, "service", "chat completions",     "gpt-5-mini"),
+    "llm":     (572,  34, 200,  48, "service", "chat completions",     "gpt-5.6-luna"),
     "db":      (572, 110, 200, 180, "frame",   "memory.db",            ""),
     # One line per table now that the column is wide enough to hold the whole name. The
     # old CONVERSATIONAL_ / MEMORY split existed only to survive a 106px card.
@@ -341,7 +341,7 @@ LEGEND = (
 TURN = (
     ("read",  "e_read",  "read_user_facts()",         "deterministic",   "CONVERSATIONAL_MEMORY",                   "mem"),
     ("write", "e_write", 'save_turn("user", \u2026)',      "deterministic",   "CONVERSATIONAL_MEMORY",                   "mem"),
-    ("llm",   "",        "chat completions",          "every turn",      "gpt-5-mini",                              "api"),
+    ("llm",   "",        "chat completions",          "every turn",      "gpt-5.6-luna",                              "api"),
     ("tools", "e_tools", "semantic_search()",         "agent-triggered", "embeddings, then every row of one table",  "mem"),
     ("write", "e_write", 'save_turn("assistant", \u2026)', "deterministic",   "CONVERSATIONAL_MEMORY",                   "mem"),
     # "your terminal" was wrong here: report() prints exactly one thing, the [meter] line.

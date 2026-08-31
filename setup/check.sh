@@ -49,7 +49,7 @@ if [ -n "${OPENAI_API_KEY:-}" ]; then
 import sys
 try:
     from openai import OpenAI
-    r = OpenAI().chat.completions.create(model="gpt-5-mini",
+    r = OpenAI().chat.completions.create(model="gpt-5.6-luna",
         messages=[{"role": "user", "content": "reply with the single word: ok"}])
     print(f"PASS  live API call succeeded (model replied {r.choices[0].message.content!r})")
 except Exception as e:
