@@ -48,7 +48,9 @@ ROUND_TITLE = {
     2: "Deterministic memory — code invokes, every turn",
     3: "Agent-triggered memory — the model invokes, via tools",
     4: "Counting — one passing run proves nothing",
-    5: "The per-operation decision — pin exactly one read",
+    # Names the work, not the verdict: "pin exactly one read" was the answer to
+    # the round's own gate, and this label shows on every page from Round 1.
+    5: "The per-operation decision — six operations, one at a time",
 }
 
 
@@ -106,6 +108,28 @@ def course_commits():
 def course_stage():
     """Highest N with a `round-N build` commit — how far the app itself is. 0 = baseline."""
     return max((n for (n, phase) in course_commits() if phase == "build"), default=0)
+
+
+def course_position():
+    """(round, phase) of the last course commit, or (0, "") before the course starts."""
+    for line in git("log", "--format=%s").splitlines():
+        m = re.match(r"^round-([1-5]) (tutor|spec|build|demo)$", line.strip())
+        if m:
+            return int(m.group(1)), m.group(2)
+    return 0, ""
+
+
+def course_round():
+    """Which round the learner is IN — not how far the app is built.
+
+    `course_stage()` answers a different question and lags this by two phases: a round's
+    build lands after its tutor and spec, so during Round 4's TUTOR the app is still the
+    Round 3 build. Anything filed under "what the learner was doing" needs this one.
+    """
+    n, phase = course_position()
+    if not n:
+        return 1
+    return n + 1 if phase == "demo" and n < 5 else n
 
 
 def src_dirty():
