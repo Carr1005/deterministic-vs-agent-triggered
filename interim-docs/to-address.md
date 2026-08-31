@@ -144,19 +144,6 @@ butter" and "sesame-crusted simit" name themselves and leave the KB decorative.
       question.
 - **R5 is closed.**
 
-**Two R5 findings recorded but deliberately not fixed:**
-- **Q5.1's description does not match its code.** It says `read_user_facts` "loads the
-  user's stored facts (allergies, preferences)"; the function does
-  `SELECT role, content FROM CONVERSATIONAL_MEMORY` — the entire transcript, assistant
-  turns included. Narrowing it would make the preload genuinely "small" and would let the
-  old "between the extremes" claim stand, but `read_user_facts` is shared with Round 2, so
-  R2's documented `in≈106` and its "about 4× your baseline" claim would both move, and
-  BUILD's payoff line ("two lines, exactly where the learner's own Q5.1 verdict put them")
-  would stop being true. Not worth a cascade into a closed round.
-- **The compounding cost has no ceiling.** Nothing truncates the pinned read, so a long
-  session's preload grows without bound. Out of scope for a five-round course, but it is
-  the obvious next design question and Q5.6's summarize-and-store is where it belongs.
-
 ### 6. For the future course-generator guidance doc
 - Question-group pacing cap: groups >6 sub-questions should split across phases or rounds
   (R5's six is the tested ceiling).
