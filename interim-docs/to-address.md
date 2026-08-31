@@ -44,6 +44,32 @@ Not learner content. Items land here when flagged in design review; remove when 
   unaided. No pointer contains a rule, so none can drift. The universal boot line —
   "Read AGENTS.md and start the course" — names only the neutral file and works anywhere.
 
+## Closed 2026-08-31
+
+- **Drift repair path** (was item 2). Shipped and standing: mode tags on every reply,
+  re-anchor after compaction / ~15 turns, learner levers ("explain" / "stop telling, ask
+  me" / "just tell me") — the learner is the detector. No trial has shown drift that the
+  levers couldn't repair, so the escalations (post-round self-audit, per-turn phase-file
+  re-injection) stay unbuilt. Reopen only if a live run drifts unrecoverably.
+- **The five-round trial** (was item 3). Setup had already been verified live in all four
+  distribution channels (bootstrap end to end, init.sh variants, idempotent re-runs, the
+  guards, all five verify.sh, one live baseline turn). The remaining unknown — five rounds
+  with a live tutor — now belongs to the sandbox model: learners run in fresh clones of
+  `release`, one clone per run (`interim-docs/state-machine.md`), and those runs are the
+  trial. Confirm the README `[meter]` numbers (baseline ~21 / preload ~118) against the
+  first such run.
+- **Onboarding friction** (was item 4). Addressed as far as it goes: one command
+  (`bash setup/bootstrap.sh`), a tutor that runs setup itself on first contact, and the
+  irreducible `export OPENAI_API_KEY`. The optional `FORMAT-WALKTHROUGH.md` is declined —
+  the sandbox model gives a reviewer a real run instead of a captured one.
+- **Round 5 optional stretch** (was item 5). Decided: `write_tool_log` stays free-form,
+  committed as `round-5 learner-edit`, with no verify.sh check — the stretch is an
+  invitation, not a gate.
+- **Vendor sub-agent adapters** (was item 7). Declined. Instruction-file pointers (see
+  "Resolved" above) are the whole vendor story; sub-agents must never carry the tutoring
+  dialogue (they cannot ask the learner questions), and no validated need for a read-only
+  verifier agent has appeared.
+
 ## Open
 
 ### 1. Demo punchlines are probabilistic — R1 measured and fixed; R3/R4 still open
@@ -131,41 +157,6 @@ butter" and "sesame-crusted simit" name themselves and leave the KB decorative.
   session's preload grows without bound. Out of scope for a five-round course, but it is
   the obvious next design question and Q5.6's summarize-and-store is where it belongs.
 
-### 2. Drift repair path (partially addressed — monitor in trials)
-Mode tags on every reply, re-anchor after compaction / ~15 turns, learner levers
-("explain" / "stop telling, ask me" / "just tell me"). The learner is the detector.
-- [ ] If trials show drift anyway: add a post-round self-audit, or escalate to per-turn
-      re-injection of the phase file (token cost).
-
-### 3. Setup verified live; the five-round course trial is still outstanding
-**Verified against the real stack**, in throwaway copies of all four distribution
-channels: `bootstrap.sh` end to end (venv, packages, seed of 5/5/7 rows, one live API
-call), `init.sh` on clone / template / zip / folder-copy, idempotent re-runs, the
-missing-key path exiting before it spends or commits, the carried-over-database guard,
-the mid-course guard that must *not* re-seed, all five `verify.sh` passing against their
-references, and one live baseline turn.
-
-**Not yet done:** nobody has played the course itself — five rounds of TUTOR → SPEC →
-BUILD → DEMO with a live tutor. That is the remaining unknown, and it is the part the
-format is judged on.
-- [ ] One developer completes all five rounds in a fresh copy, start to finish.
-- [ ] Confirm embedding dimensions/pricing assumptions and the `[meter]` numbers in
-      README's round table (baseline ~21 / preload ~118) against that run.
-
-### 4. Onboarding friction is the top risk to a format evaluation
-Anyone assessing the *format* meets the setup first, so friction there gets scored as a
-verdict on the format. Largely addressed: one command, `bash setup/bootstrap.sh`, and a
-tutor that offers to run it on first contact. The irreducible step is an
-`OPENAI_API_KEY` exported in the terminal the agent is launched from.
-- [ ] Consider `interim-docs/FORMAT-WALKTHROUGH.md`: the four-phase loop shown with real
-      captured outputs, so a reviewer can judge the pattern in two minutes without any
-      setup. (Real-stack stays the only *course* path — a faked demo can't teach a
-      measured lesson.)
-
-### 5. Round 5 optional stretch
-`write_tool_log` build is offered but unverified by verify.sh. Decide: add a check, or keep
-free-form (currently free-form, committed as `round-5 learner-edit`).
-
 ### 6. For the future course-generator guidance doc
 - Question-group pacing cap: groups >6 sub-questions should split across phases or rounds
   (R5's six is the tested ceiling).
@@ -177,10 +168,3 @@ free-form (currently free-form, committed as `round-5 learner-edit`).
 - Infrastructure earns its place only if it makes the *concept* easier to see. The Oracle
   audit above is the worked example: real stack, zero conceptual contribution, high setup
   cost → replaced with the smallest thing that keeps the lesson honest.
-
-### 7. Vendor sub-agent adapters (progressive enhancement, post-validation only)
-Instruction-file pointers are done (see "Resolved" above) — this item is now only about
-**sub-agents**: an optional `.claude/agents/` read-only verifier, a Codex `.codex/agents/`
-equivalent, Cline Plan/Act mapping. Only after the single-agent flow is validated by the
-five-round trial — sub-agents must never carry the interactive tutoring dialogue (they
-cannot ask the learner questions).
