@@ -2,7 +2,7 @@
 from openai import OpenAI
 
 client = OpenAI()
-MODEL = "gpt-5-mini"
+MODEL = "gpt-5.6-luna"
 
 SYSTEM_PROMPT = "You are SnackBot, a snack-recommendation assistant."
 

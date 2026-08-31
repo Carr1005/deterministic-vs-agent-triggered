@@ -8,7 +8,7 @@ from meter import report, timed
 from openai import OpenAI
 
 client = OpenAI()
-MODEL = "gpt-5-mini"
+MODEL = "gpt-5.6-luna"
 
 SYSTEM_PROMPT = (
     "You are SnackBot, a snack-recommendation assistant. You have memory of past "
@@ -21,6 +21,7 @@ def call_llm(messages, tools=None):
     kwargs = {"model": MODEL, "messages": messages}
     if tools:
         kwargs["tools"] = tools
+        kwargs["reasoning_effort"] = "none"  # gpt-5.6 rejects tools+reasoning combined
     response = client.chat.completions.create(**kwargs)
     return response.choices[0].message
 
