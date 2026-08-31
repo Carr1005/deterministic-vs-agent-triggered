@@ -26,6 +26,20 @@ Not learner content. Items land here when flagged in design review; remove when 
   already existed. All course commands are pinned to `.venv/bin/python`, so the same
   string works in the learner's terminal and in an agent's non-persistent bash shell.
   `setup/pristine.sh` proves a copy is unstarted before it is shared.
+- **The tutor can point an open guide page at a section.** `tools/viewer/focus.py` writes
+  a target to `$TMPDIR`; `/focus` reports it; a page that is on screen scrolls itself there
+  within ~3s, opening the card first if it is collapsed. Per-round sub-anchors were added
+  for it (`#rN-spec`, `#rN-app`, `#rN-runs`; only `#rN` existed). Verified end to end on a
+  clean clone, plus 8 checks in a node harness: a pointer older than the tab is ignored, a
+  newer one opens collapsed ancestors, the same pointer twice does not re-scroll, a
+  cross-page target navigates, an unknown id is ignored quietly. It writes nothing into the
+  repo — the pointer lives in `$TMPDIR`, keyed by a hash of the repo path the way
+  `/healthz` reports it, so it cannot touch `git status --porcelain` and a trial clone
+  cannot steer the original's tab. It is also absent from `signature()` on purpose, so a
+  pointer never masquerades as a content change and forces a reload. **Known boundary:** a
+  page cannot raise its own window, so this works when the page is visible — a second
+  monitor, or side by side. A fully occluded window is reported `hidden` and its timers are
+  throttled, so it catches up when next looked at rather than before.
 - **A live diff viewer, verified end to end.** `tools/diffview` serves every round's spec
   and code change at `localhost:4000`, read from the learner's own git history, with
   unified and side-by-side views. Both views are rendered from the same text so they
@@ -155,6 +169,51 @@ butter" and "sesame-crusted simit" name themselves and leave the KB decorative.
 - Infrastructure earns its place only if it makes the *concept* easier to see. The Oracle
   audit above is the worked example: real stack, zero conceptual contribution, high setup
   cost → replaced with the smallest thing that keeps the lesson honest.
+
+### 7. Nothing tells the tutor the page pointer exists
+
+The mechanism shipped and works (see Resolved). What is missing is the caller:
+**`COURSE.md` mentions `focus.py`, `viewer` and `:4000` zero times.** Measured in a real
+Round-3 session (`/private/tmp/r3`): asked to point out Round 2 in the guide, the tutor
+correctly cited `#r2`, `#r2-app` and `#r2-spec` and printed them as links, but `focus.py`
+appears 0 times in that transcript, so the learner clicked. One line in `COURSE.md` closes
+it — and that file is a cross-branch collision, so it wants its own small fast commit.
+
+**Optional, for the occluded case:** a `focus.py --raise` would write the pointer, then use
+AppleScript to *select the guide tab and activate Chrome* — no navigation, therefore no new
+tab, and the tab becoming visible is itself what applies the pointer. `open <url>` is the
+cross-platform fallback but reuses a tab only on an exact URL match, which cannot happen
+while that tab is throttled, so it spawns tabs. Behind a flag either way: a tutor stealing
+the window mid-conversation is worse than a click.
+
+**Scope ceiling, which the pointer does not introduce.** The agent's shell and the browser
+must be on one machine — already true of the whole viewer, since `localhost:4000` is
+meaningless otherwise. Claude Code on the web or in a cloud sandbox cannot reach it; over
+SSH the pointer lands on the wrong machine. `osascript` would narrow the raise further, to
+macOS + Chrome. Worth weighing first: in VS Code or JetBrains the guide could open in the
+IDE's built-in browser pane, as an editor tab beside the code — always visible, never
+occluded, no window to raise.
+
+**Smaller:** `focus.py --port` defaults to 4000, but `serve.sh` steps aside to 4001 when
+4000 is taken (observed: :4000 the trial clone, :4001 the sandbox). The pointer is keyed by
+repo path and each page polls its own origin, so the port affects only the health probe and
+the printed URL — the message misleads, the behaviour is right. Probe a small range as
+`serve.sh` already does.
+
+### 8. `.gitignore`'s `.venv/` misses replay's symlink — every sandbox reads dirty
+
+`replay.py` symlinks the source repo's `.venv` into the sandbox, so the entry is a
+symlink, not a directory. `.gitignore:2` is `.venv/`, and a trailing slash matches a
+*directory*; git treats a symlink as a file, so the pattern misses it and
+`git status --porcelain` reports `?? .venv` for the life of the sandbox.
+
+That is the tutor's mid-round resume signal (`course/PROTOCOL.md`) reading dirty in every
+replay sandbox — precisely the state the signal exists to distinguish. Observed in
+`/private/tmp/r3`. Pre-existing; unrelated to the viewer work that found it.
+
+Fix: `.venv/` → `.venv` in `.gitignore`, which matches both, or have `replay.py` add the
+line to the sandbox's `.git/info/exclude` instead. `.gitignore` is also a cross-branch
+collision file, so land it small and fast.
 
 ## 2026-08-31 — rulebook renamed `AGENTS.md` → `COURSE.md`
 
