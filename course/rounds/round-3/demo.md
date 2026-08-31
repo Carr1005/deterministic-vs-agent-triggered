@@ -9,7 +9,7 @@
 
 - **Predict:** "Same code, same question, three runs. Two predictions: will all three
   reach for memory — and where will the meter land against your Round-1 24 and Round-2 106?"
-- **Run (three times):** `.venv/bin/python src/snackbot.py "I'm in Paris — suggest a quick sweet snack for me."`
+- **Run (three times):** `.venv/bin/python src/snackbot.py "I'm walking down Rue Bonaparte in Saint-Germain — suggest a sweet to pick up nearby."`
 - **Observe (shape):** **the runs differ.** Two shapes to name out loud:
   1. **A run with `[tool]` lines** reads the allergy and answers safely — roughly
      `in≈142`, *above* Round 2's preload, because a tool round-trip is two calls where the

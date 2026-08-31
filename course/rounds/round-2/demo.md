@@ -9,7 +9,7 @@
 
 - **Predict:** "Same snack question as Round 1. Two predictions: safe or not — and what
   does the meter's `in` do versus your baseline of ~24?"
-- **Run:** `.venv/bin/python src/snackbot.py "I'm in Paris — suggest a quick sweet snack for me."`
+- **Run:** `.venv/bin/python src/snackbot.py "I'm walking down Rue Bonaparte in Saint-Germain — suggest a sweet to pick up nearby."`
 - **Observe (shape):** a safe suggestion; `[meter]` roughly `in≈106` — about **4× your
   Round-1 baseline**.
 

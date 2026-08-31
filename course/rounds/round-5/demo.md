@@ -33,7 +33,7 @@
   does a single turn land?"
 - **Run:** `.venv/bin/python setup/reset_memory.py` — again, and not as decoration: they
   just watched the batch inflate its own input.
-- **Run:** `.venv/bin/python src/snackbot.py "I'm in Paris — suggest a quick sweet snack for me."`
+- **Run:** `.venv/bin/python src/snackbot.py "I'm walking down Rue Bonaparte in Saint-Germain — suggest a sweet to pick up nearby."`
 - **Observe (shape):** **`in≈134`** — *above* Round 2's 106, because the memory-aware
   system prompt rides along on every turn; nearer `in≈240` if this turn also reached for a
   tool. Say the honest version out loud: **they did not buy a cheaper design.** They bought
