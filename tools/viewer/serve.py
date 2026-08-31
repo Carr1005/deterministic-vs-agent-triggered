@@ -20,6 +20,7 @@ Invariants inherited by everything here (see core.py):
 """
 import argparse
 import http.server
+import json
 import sys
 import threading
 import time
@@ -30,7 +31,7 @@ import shell
 HEALTH_TOKEN = "snackbot-viewer-ok"
 
 # A view id may not shadow an infra route. Asserted at startup, not hoped for.
-RESERVED = {"healthz", "state", "index.html", "favicon.ico"}
+RESERVED = {"healthz", "state", "focus", "index.html", "favicon.ico"}
 
 
 class _BrokenView:
@@ -106,6 +107,18 @@ class Handler(http.server.BaseHTTPRequestHandler):
             # otherwise recognise each other's viewer as their own, and `--ensure` would
             # hand the learner a URL serving the wrong repository.
             return self._send(200, f"{HEALTH_TOKEN} {core.REPO}", TEXT)
+
+        if path == "/focus":
+            # Where the tutor last pointed, for an open page to follow. Read-only, and
+            # deliberately NOT counted as activity: /state carries the visibility flag
+            # that decides whether anyone is watching, and a page fetches both in the same
+            # tick. Counting this one would let a forgotten tab keep the server alive.
+            #
+            # It is also kept out of signature() on purpose (see core.focus_path): a
+            # pointer must never look like a content change, or every one would trigger a
+            # full reload and lose the reader's scroll position.
+            return self._send(200, json.dumps(core.read_focus() or {}),
+                              "application/json; charset=utf-8")
 
         if path.startswith("/state/"):
             # A poll counts as activity only when the page says it is actually on screen.

@@ -958,12 +958,13 @@ def round_section(n, commits, here, db_exists):
     built = (n, "build") in commits
     body = ""
     if (n, "spec") in commits and spec_html(n):
-        body += f'<h3>What you specified</h3>{spec_html(n)}'
+        body += f'<h3 id="r{n}-spec">What you specified</h3>{spec_html(n)}'
     if built:
-        body += f'<h3>How the app worked after this round</h3>{app_panel(n, db_exists)}'
+        body += (f'<h3 id="r{n}-app">How the app worked after this round</h3>'
+                     f'{app_panel(n, db_exists)}')
     runs = run_log_html(n, empty=False)
     if runs:
-        body += f"<h3>Runs your tutor made</h3>{runs}"
+        body += f'<h3 id="r{n}-runs">Runs your tutor made</h3>{runs}'
     if not body:
         body = ('<p class="pending">Not reached yet &mdash; this round&rsquo;s spec, its '
                 'diagram and its runs appear here as you get there.</p>')

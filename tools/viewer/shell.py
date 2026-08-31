@@ -83,7 +83,7 @@ body{margin:0;background:var(--base-150);color:var(--base-content);
 /* A URL anchor scrolls its target to the very top, which is precisely where the sticky
    bars are — so every anchorable thing reserves their height. Without this, a deep link
    from the tutor lands with the card it named hidden behind the tabs. */
-.round,details.d,section[id]{
+.round,details.d,section[id],h3[id]{
   scroll-margin-top:calc(var(--bar-top-h) + var(--sub-h) + 14px)}
 
 /* The bars are full-bleed: they cancel the wrap's gutter so nothing scrolls through the
@@ -239,7 +239,54 @@ POLL_JS = """
     location.reload();
   }
 
+  // --- the tutor's pointer -----------------------------------------------------------
+  // `focus.py` writes a target to $TMPDIR and /focus reports it, so a page already on
+  // screen can follow the URL the tutor just cited. It cannot raise the window -- that
+  // needs a user gesture no page can fake -- so a backgrounded tab simply turns out to be
+  // in the right place when it is next looked at.
+  var fkey = "snackbot-focus-seen", fseen = null;
+  try {
+    var fv = sessionStorage.getItem(fkey);
+    if (fv) fseen = parseInt(fv, 10);
+  } catch (e) {}
+
+  function fsave() {
+    try { sessionStorage.setItem(fkey, String(fseen)); } catch (e) {}
+  }
+
+  function go(target) {
+    var cut = target.indexOf("#");
+    var page = cut < 0 ? target : target.slice(0, cut);
+    var id = cut < 0 ? "" : target.slice(cut + 1);
+    if (page !== "/__ID__") { location.href = target; return; }   // it means the other tab
+    if (!id) { window.scrollTo(0, 0); return; }
+    var el = document.getElementById(id);
+    if (!el) return;                        // not on this build of the page; say nothing
+    // Open the target and every <details> above it. Without this a deep link at a
+    // collapsed card scrolls to a shut summary and reads as having done nothing.
+    for (var n = el; n; n = n.parentElement) {
+      if (n.tagName === "DETAILS") n.open = true;
+    }
+    // scrollIntoView, never location.hash: assigning a hash that is already set is a
+    // no-op, so pointing twice at the same section would move nothing the second time.
+    // replaceState keeps the URL shareable without adding history entries.
+    el.scrollIntoView();
+    try { history.replaceState(null, "", "#" + id); } catch (e) {}
+  }
+
+  function pointer() {
+    fetch("/focus").then(function (r) { return r.json(); }).then(function (f) {
+      if (!f || !f.seq) return;
+      if (fseen === null) { fseen = f.seq; fsave(); return; }
+      // A pointer written before this tab existed is history, not an instruction -- the
+      // first look only records where we came in. Held in sessionStorage so it survives
+      // our own auto-reload: a commit landing in the same tick must not eat the jump.
+      if (f.seq > fseen) { fseen = f.seq; fsave(); go(f.target); }
+    }).catch(function () {});
+  }
+
   function check() {
+    pointer();
     // The flag is what keeps the server alive while someone is actually reading, without
     // a tab forgotten in a background window doing the same. See serve.py's /state route.
     // `=== "visible"`, not `!== "hidden"`: were the API ever missing, the negative form
@@ -266,6 +313,7 @@ POLL_JS = """
     });
   }
 
+  pointer();          // baseline at once, so a jump after a reload is not 3s late
   setInterval(check, 3000);
   // Coming back to a backgrounded tab: revive it and refresh at once, rather than
   // showing whatever was on screen for up to another three seconds.

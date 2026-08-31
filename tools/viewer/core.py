@@ -21,6 +21,8 @@ Two rules that keep the whole tool honest, and that anything added here must res
 Standard library only, so setup/requirements.txt and setup/check.sh stay untouched and
 nobody mid-course has to re-bootstrap.
 """
+import hashlib
+import json
 import os
 import re
 import sqlite3
@@ -38,6 +40,44 @@ REPO = Path(__file__).resolve().parent.parent.parent
 RUN_LOG = REPO / ".snackbot-runs.jsonl"
 
 TABLES = ("CONVERSATIONAL_MEMORY", "CONVERSATION_VECTORS", "SEMANTIC_MEMORY")
+
+# Where the tutor leaves a "look at this" pointer for an open page to follow.
+#
+# $TMPDIR, never the repo. serve.sh states the rule: nothing in this repository is ever
+# written to, because `git status --porcelain` is the tutor's mid-round resume signal. A
+# file here therefore cannot dirty that signal, and needs no .gitignore entry -- which
+# also keeps this feature off a file CONTRIBUTING.md names as a cross-branch collision.
+#
+# Keyed by repo path for the same reason /healthz reports it: a trial clone or a replay
+# sandbox running beside the original must not steer the original's browser tab.
+#
+# Deliberately absent from signature(): a focus must never look like a content change, or
+# every pointer would trigger a full page reload.
+def focus_path():
+    key = hashlib.sha1(str(REPO).encode()).hexdigest()[:12]
+    return Path(os.getenv("TMPDIR", "/tmp")) / f"snackbot-focus-{key}.json"
+
+
+# The value becomes somewhere a browser tab goes, so it is whitelisted rather than
+# trusted: a same-origin path on this server, plus an optional plain fragment. Nothing
+# here can send the tab off-origin even if the file is garbage.
+FOCUS_TARGET = re.compile(r"^/(guide|diffs)(#[A-Za-z0-9_.\-]{1,64})?$")
+
+
+def read_focus():
+    """The tutor's most recent pointer as {"seq", "target"}, or None."""
+    try:
+        d = json.loads(focus_path().read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(d, dict):
+        return None
+    target, seq = d.get("target"), d.get("seq")
+    if not isinstance(target, str) or not FOCUS_TARGET.match(target):
+        return None
+    if not isinstance(seq, int) or seq <= 0:
+        return None
+    return {"seq": seq, "target": target}
 
 # The same commit-name pattern setup/bootstrap.sh uses to decide if a course has started.
 COURSE_COMMIT = re.compile(r"^round-([1-5]) (spec|build)$")
