@@ -3,7 +3,7 @@
 This file is the **curriculum owner's surface**: every mode in which the tutor speaks
 with the learner lives here, and changing how that conversation works means editing this
 file — nothing else. Engineering rules (setup, git protocol, what files a build may
-touch) live in `AGENTS.md`, `course/BUILDING.md` and `course/PROTOCOL.md`; a change here
+touch) live in `COURSE.md`, `course/BUILDING.md` and `course/PROTOCOL.md`; a change here
 cannot break them.
 
 The `git add … && git commit …` lines below mirror `course/PROTOCOL.md`, which stays the

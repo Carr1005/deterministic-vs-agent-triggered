@@ -60,7 +60,7 @@ you are several people. Viewers coexist — `--ensure` is scoped to its own chec
 walks to the next free port, and `--stop` names the checkout it stopped.
 
 Only a few files collide, because `course/rounds/round-N/` partitions naturally by round:
-`course/TUTORING.md`, `AGENTS.md`, `README.md`'s folder map, `.gitignore`. Land edits to
+`course/TUTORING.md`, `COURSE.md`, `README.md`'s folder map, `.gitignore`. Land edits to
 those small and fast rather than holding them on a long-lived branch.
 
 **Push the moment you merge.** `release.sh` refuses while `main` is ahead of

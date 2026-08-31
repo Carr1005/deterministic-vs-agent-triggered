@@ -15,7 +15,7 @@ TUTOR  →  SPEC  →  BUILD  →  DEMO
 - **DEMO** — the learner operates the app per `round-N/demo.md`: predict → run →
   observe → record. Produces an entry in `course/demo-log.md`.
 
-Modes, mode tags (`[R2 · TUTOR]`), and the EXPAND sub-mode are defined in AGENTS.md.
+Modes, mode tags (`[R2 · TUTOR]`), and the EXPAND sub-mode are defined in COURSE.md.
 
 ## Git is the state machine
 
@@ -56,7 +56,7 @@ resume signal, and it is the learner's own record — not agent bookkeeping.
 ## Question types and groups
 
 Every question carries `type: single-answer` or `type: judgment` (acceptance rules in
-AGENTS.md). A **question group** is several sub-questions (`Q5.1`–`Q5.6`) sharing one
+COURSE.md). A **question group** is several sub-questions (`Q5.1`–`Q5.6`) sharing one
 output artifact and one gate: ask one at a time, produce the artifact once. Round 5 is
 an ordinary round containing one group of six judgment questions — no special protocol.
 

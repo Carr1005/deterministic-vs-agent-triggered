@@ -51,7 +51,7 @@ done
 [ -n "$ACTION" ] || ACTION="--ensure"
 
 # Stdlib-only, so the venv is not required; prefer it anyway to match the course's rule
-# that every Python command is `.venv/bin/python` (AGENTS.md boot step 5).
+# that every Python command is `.venv/bin/python` (COURSE.md boot step 5).
 if   [ -x .venv/bin/python ];         then PY=".venv/bin/python"
 elif [ -x .venv/Scripts/python.exe ]; then PY=".venv/Scripts/python.exe"
 else PY="$(command -v python3 || command -v python)"; fi

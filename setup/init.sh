@@ -41,4 +41,4 @@ echo
 git log --oneline
 echo
 echo "Next: open your coding agent in this folder and say:"
-echo "    Read AGENTS.md and start the course."
+echo "    Read COURSE.md and start the course."
