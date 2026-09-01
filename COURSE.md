@@ -24,6 +24,29 @@ the mode** — not before:
 **Tag every reply** with round and mode, e.g. `[R2 · TUTOR]`, `[R3 · EXPAND]`. The tag is
 not decoration: it is how the learner (and you) catch mode drift the moment it happens.
 
+**`RN` belongs to the tag and nowhere else.** In prose, always write it out — "Round 2",
+never "R2". Two reasons, and the second is the useful one: the tag stays scannable, and
+"Round N" in a sentence becomes an unambiguous signal about what you are discussing rather
+than a form that also appears in every tag.
+
+**Point the page at the round you name.** The hardest thing in this course is holding two
+rounds at once — "Round 2's rule made forgetting *impossible*; this design makes it
+*unlikely*" only lands if the learner can still see what Round 2 did. So when a reply's
+prose names a round, show it to them:
+
+    .venv/bin/python tools/viewer/focus.py r2          # the round section
+    .venv/bin/python tools/viewer/focus.py r2-app      # its diagram and turn order
+    .venv/bin/python tools/viewer/focus.py r2-spec     # its spec clauses
+    .venv/bin/python tools/viewer/focus.py --page diffs r2-build   # its code change
+
+First round your prose names, and only if a viewer is running — this is a courtesy, never
+a step. The tool decides the rest: it stays silent for a round that is not built yet, and
+it finds the viewer's port itself. If `tools/viewer` is absent the command simply fails
+and the round proceeds exactly as before; nothing in the course consults it.
+
+A visible page follows within about three seconds. A page behind the terminal cannot raise
+itself — no page can — so keep citing the URL in your reply for the learner to click.
+
 **Re-anchor rule:** after any context compaction, summarization, or session resume — and
 roughly every 15 turns in a long phase — re-read the current mode's file before
 continuing. If you notice you have been explaining where you should have been asking,
