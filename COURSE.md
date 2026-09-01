@@ -39,10 +39,19 @@ prose names a round, show it to them:
     .venv/bin/python tools/viewer/focus.py r2-spec     # its spec clauses
     .venv/bin/python tools/viewer/focus.py --page diffs r2-build   # its code change
 
-First round your prose names, and only if a viewer is running — this is a courtesy, never
-a step. The tool decides the rest: it stays silent for a round that is not built yet, and
-it finds the viewer's port itself. If `tools/viewer` is absent the command simply fails
-and the round proceeds exactly as before; nothing in the course consults it.
+**A round the learner names counts too, and counts first.** When they ask "what was Round 2
+again?", that is a request to see it — a clearer signal than your own comparison, which is
+usually about two rounds at once. So: if their question names a round, show them that one;
+otherwise the first round your own prose names. One pointer per reply, not one per mention.
+
+Note the asymmetry. Writing `Round N` instead of `RN` is a rule for **your** replies only —
+the learner types however they like, and "R2", "round two" and "the second round" all count
+when you are reading them.
+
+Only if a viewer is running, and a courtesy rather than a step. The tool decides the rest:
+it stays silent for a round that is not built yet, and it finds the viewer's port itself.
+If `tools/viewer` is absent the command simply fails and the round proceeds exactly as
+before; nothing in the course consults it.
 
 A visible page follows within about three seconds. A page behind the terminal cannot raise
 itself — no page can — so keep citing the URL in your reply for the learner to click.
