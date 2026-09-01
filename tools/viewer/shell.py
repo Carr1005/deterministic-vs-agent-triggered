@@ -216,9 +216,11 @@ POLL_JS = """
 (function () {
   var cur = "__SIG__", key = "snackbot-open-__ID__", fails = 0, note = null;
 
+  var restored = false;                     // did this load come from our own reload?
   try {                                     // coming back from our own reload
     var was = JSON.parse(sessionStorage.getItem(key) || "null");
     if (was) {
+      restored = true;
       sessionStorage.removeItem(key);
       was.open.forEach(function (id) {
         var el = document.getElementById(id);
@@ -324,10 +326,16 @@ POLL_JS = """
   // Arriving with a fragment — a clicked link, or a cross-page pointer where the browser
   // applied the hash rather than go() — gets the same treatment. The browser has already
   // scrolled somewhere by now; re-running reveal() is what opens the card it landed on.
-  // Guarded, not assumed: this runs at the IIFE's top level, so a throw here would
-  // take the auto-reload and the stopped-viewer notice down with it. A convenience
-  // must never be able to kill the poll.
-  if (location.hash && location.hash.length > 1) {
+  // Only on a FRESH arrival. A pointer jump leaves its fragment in the URL for good
+  // (replaceState above), and guide.signature() includes the run log — so every tutor run
+  // reloads the page. Revealing on those reloads would drag the reader back to whatever
+  // was last pointed at instead of restoring where they were reading, and it would look
+  // like the auto-reload misbehaving rather than the pointer.
+  //
+  // Guarded, not assumed: this runs at the IIFE's top level, so a throw here would take
+  // the auto-reload and the stopped-viewer notice down with it. A convenience must never
+  // be able to kill the poll.
+  if (!restored && location.hash && location.hash.length > 1) {
     reveal(location.hash.slice(1), false);
   }
   pointer();          // baseline at once, so a jump after a reload is not 3s late
