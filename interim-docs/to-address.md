@@ -170,35 +170,46 @@ butter" and "sesame-crusted simit" name themselves and leave the KB decorative.
   audit above is the worked example: real stack, zero conceptual contribution, high setup
   cost → replaced with the smallest thing that keeps the lesson honest.
 
-### 7. Nothing tells the tutor the page pointer exists
+### 7. Page pointer: wired to the tutor; the raise is still open
 
-The mechanism shipped and works (see Resolved). What is missing is the caller:
-**`COURSE.md` mentions `focus.py`, `viewer` and `:4000` zero times.** Measured in a real
-Round-3 session (`/private/tmp/r3`): asked to point out Round 2 in the guide, the tutor
-correctly cited `#r2`, `#r2-app` and `#r2-spec` and printed them as links, but `focus.py`
-appears 0 times in that transcript, so the learner clicked. One line in `COURSE.md` closes
-it — and that file is a cross-branch collision, so it wants its own small fast commit.
+**Closed.** `COURSE.md` now carries the convention and the rule: `RN` belongs to the tag
+and prose writes "Round 2", and when a reply's prose names a round the tutor points the
+page at it — first mention, courtesy not step. `focus.py` owns the two guards so they are
+deterministic rather than remembered: it stays silent for a round that is not built
+(`course_stage()`), and it walks `$PORT..$PORT+5` the way `serve.sh` does instead of
+assuming 4000. Deep links now open the collapsed card they land on, which fixes the
+*clicked* path too — measured on a played course, 10 of 10 targets on `/diffs` and 9 of 9
+on `/guide` start closed, so every link previously arrived at a shut summary.
 
-**Optional, for the occluded case:** a `focus.py --raise` would write the pointer, then use
-AppleScript to *select the guide tab and activate Chrome* — no navigation, therefore no new
-tab, and the tab becoming visible is itself what applies the pointer. `open <url>` is the
-cross-platform fallback but reuses a tab only on an exact URL match, which cannot happen
-while that tab is throttled, so it spawns tabs. Behind a flag either way: a tutor stealing
-the window mid-conversation is worse than a click.
+Measured basis, from one played Round-3 session (17 assistant messages, tag stripped): 7
+messages write "Round 2" in prose, 0 write "R2", 9 name no round at all. So the convention
+is how the tutor already writes, and the firing rate is 8/17 rather than the 15/17 that
+scraping *with* the tag in scope would have produced. First-mention was checked sentence by
+sentence: right in 4, acceptable in 2, and the only 2 failures were forward references to
+unbuilt rounds — which is the guard `focus.py` now applies.
+
+**Still open — the occluded window.** A page cannot raise itself; that needs a user
+gesture. macOS reports a fully covered window as `hidden` and browsers throttle timers in
+hidden tabs, so an occluded page catches up when next looked at. A `focus.py --raise` could
+write the pointer and then use AppleScript to *select the guide tab and activate Chrome* —
+no navigation, so no new tab, and the tab becoming visible is itself what applies the
+pointer. `open <url>` is the cross-platform fallback but reuses a tab only on an exact URL
+match, which cannot happen while that tab is throttled, so it spawns tabs. Behind a flag
+either way: a tutor stealing the window mid-conversation is worse than a click.
+
+**Deliberately not done.** A Claude Code `Stop` hook reading the transcript: per-machine
+config in `.claude/settings.json`, coupled to an undocumented format, and a course cloned
+by strangers cannot assume either. The viewer tailing the transcript itself: breaks the
+promise printed in the page footer, *"the only file it reads back is its own git-ignored
+run log"*. Path-less pointers so a tab acts only if it holds the id: would break the
+intended convergence (a pointer moves every open tab), and `r3-spec` exists on both pages
+anyway — an `<h3>` on the guide, a `<details>` card on diffs.
 
 **Scope ceiling, which the pointer does not introduce.** The agent's shell and the browser
 must be on one machine — already true of the whole viewer, since `localhost:4000` is
-meaningless otherwise. Claude Code on the web or in a cloud sandbox cannot reach it; over
-SSH the pointer lands on the wrong machine. `osascript` would narrow the raise further, to
-macOS + Chrome. Worth weighing first: in VS Code or JetBrains the guide could open in the
-IDE's built-in browser pane, as an editor tab beside the code — always visible, never
-occluded, no window to raise.
-
-**Smaller:** `focus.py --port` defaults to 4000, but `serve.sh` steps aside to 4001 when
-4000 is taken (observed: :4000 the trial clone, :4001 the sandbox). The pointer is keyed by
-repo path and each page polls its own origin, so the port affects only the health probe and
-the printed URL — the message misleads, the behaviour is right. Probe a small range as
-`serve.sh` already does.
+meaningless otherwise. Worth weighing before building the raise: in VS Code or JetBrains
+the guide could open in the IDE's built-in browser pane, as an editor tab beside the code —
+always visible, never occluded, no window to raise.
 
 ### 8. `.gitignore`'s `.venv/` misses replay's symlink — every sandbox reads dirty
 
