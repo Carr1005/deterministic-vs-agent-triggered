@@ -21,6 +21,7 @@ the pointer, says so, and changes nothing about the course.
 """
 import argparse
 import json
+import re
 import sys
 import time
 import urllib.request
@@ -29,16 +30,36 @@ import core
 
 DEFAULT_PAGE = "guide"
 
+# serve.sh walks $PORT..$PORT+5 when its preferred port is taken, so assuming 4000 is
+# wrong the moment two checkouts are open at once. Observed: :4000 held by a trial clone,
+# the sandbox's own viewer on :4001, and this script reporting "no viewer" about a server
+# that was running. The pointer itself is port-independent — it is keyed by repo path and
+# each page polls its own origin — so this only ever affected the message. It should still
+# not lie.
+PORT_WALK = 5
 
-def viewer_answers(port):
-    """Is one of OUR viewers on this port? Repo path is part of the identity, as in
-    serve.sh's `ours()` — a trial clone's viewer must not be mistaken for this one."""
-    try:
-        with urllib.request.urlopen(
-                f"http://127.0.0.1:{port}/healthz", timeout=0.4) as r:
-            return r.read().decode().strip() == f"snackbot-viewer-ok {core.REPO}"
-    except Exception:                            # noqa: BLE001 — absence is the answer
-        return False
+# A round section exists in the DOM for every round, but an unbuilt one holds only its
+# title and "Not reached yet". Pointing a reader there costs them their place and shows
+# nothing, so the tool refuses rather than relying on the tutor to remember.
+ROUND_ANCHOR = re.compile(r"^r([1-5])(?:-|$)")
+
+
+def find_viewer(port):
+    """The port one of OUR viewers answers on, or None.
+
+    Identity is the token AND the repository, exactly as serve.sh's `ours()` has it: a
+    trial clone or a replay sandbox running beside the original must not be mistaken for
+    it, or we would report success about someone else's tab.
+    """
+    for p in range(port, port + PORT_WALK + 1):
+        try:
+            with urllib.request.urlopen(
+                    f"http://127.0.0.1:{p}/healthz", timeout=0.4) as r:
+                if r.read().decode().strip() == f"snackbot-viewer-ok {core.REPO}":
+                    return p
+        except Exception:                        # noqa: BLE001 — absence is the answer
+            continue
+    return None
 
 
 def main():
@@ -55,6 +76,16 @@ def main():
         print(f"FAIL  {target!r} is not a section on this viewer.")
         return 1
 
+    m = ROUND_ANCHOR.match(anchor)
+    if m:
+        n, stage = int(m.group(1)), core.course_stage()
+        if n > stage:
+            built = f"through Round {stage}" if stage else "at the Round-0 baseline"
+            print(f"NOTE  Round {n} is not built yet (the app is {built}), so that "
+                  f"section holds only its title.\n      Nothing pointed; the reader "
+                  f"keeps their place.")
+            return 0
+
     # time_ns, not a counter: monotonic without reading the previous file, so a lost or
     # hand-deleted file cannot make the next pointer look older than one already seen.
     path = core.focus_path()
@@ -65,8 +96,9 @@ def main():
         print(f"FAIL  could not write {path}: {e}")
         return 1
 
-    url = f"http://localhost:{a.port}{target}"
-    if viewer_answers(a.port):
+    found = find_viewer(a.port)
+    url = f"http://localhost:{found or a.port}{target}"
+    if found:
         print(f"PASS  pointed the open page at {url}")
         print("      A visible tab follows within ~3s. A background tab cannot raise "
               "itself; it will be in the right place when the learner switches to it.")

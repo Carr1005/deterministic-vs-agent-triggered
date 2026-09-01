@@ -254,16 +254,14 @@ POLL_JS = """
     try { sessionStorage.setItem(fkey, String(fseen)); } catch (e) {}
   }
 
-  function go(target) {
-    var cut = target.indexOf("#");
-    var page = cut < 0 ? target : target.slice(0, cut);
-    var id = cut < 0 ? "" : target.slice(cut + 1);
-    if (page !== "/__ID__") { location.href = target; return; }   // it means the other tab
-    if (!id) { window.scrollTo(0, 0); return; }
+  // Reveal one section of THIS page: open whatever is closed over it, then bring it into
+  // view. Shared by the tutor's pointer and by an ordinary deep link, because both land on
+  // the same problem — measured on a played course, every deep-linkable target on both
+  // pages is a <details> that starts closed (10 of 10 on /diffs, 9 of 9 on /guide), so a
+  // link that only scrolls arrives at a shut summary and reads as having done nothing.
+  function reveal(id, rewrite) {
     var el = document.getElementById(id);
-    if (!el) return;                        // not on this build of the page; say nothing
-    // Open the target and every <details> above it. Without this a deep link at a
-    // collapsed card scrolls to a shut summary and reads as having done nothing.
+    if (!el) return false;                  // not on this build of the page; say nothing
     for (var n = el; n; n = n.parentElement) {
       if (n.tagName === "DETAILS") n.open = true;
     }
@@ -271,7 +269,17 @@ POLL_JS = """
     // no-op, so pointing twice at the same section would move nothing the second time.
     // replaceState keeps the URL shareable without adding history entries.
     el.scrollIntoView();
-    try { history.replaceState(null, "", "#" + id); } catch (e) {}
+    if (rewrite) { try { history.replaceState(null, "", "#" + id); } catch (e) {} }
+    return true;
+  }
+
+  function go(target) {
+    var cut = target.indexOf("#");
+    var page = cut < 0 ? target : target.slice(0, cut);
+    var id = cut < 0 ? "" : target.slice(cut + 1);
+    if (page !== "/__ID__") { location.href = target; return; }   // it means the other tab
+    if (!id) { window.scrollTo(0, 0); return; }
+    reveal(id, true);
   }
 
   function pointer() {
@@ -313,6 +321,15 @@ POLL_JS = """
     });
   }
 
+  // Arriving with a fragment — a clicked link, or a cross-page pointer where the browser
+  // applied the hash rather than go() — gets the same treatment. The browser has already
+  // scrolled somewhere by now; re-running reveal() is what opens the card it landed on.
+  // Guarded, not assumed: this runs at the IIFE's top level, so a throw here would
+  // take the auto-reload and the stopped-viewer notice down with it. A convenience
+  // must never be able to kill the poll.
+  if (location.hash && location.hash.length > 1) {
+    reveal(location.hash.slice(1), false);
+  }
   pointer();          // baseline at once, so a jump after a reload is not 3s late
   setInterval(check, 3000);
   // Coming back to a backgrounded tab: revive it and refresh at once, rather than
